@@ -55,4 +55,6 @@ int main(int argc, char ** argv) {
   lf->AssocBars(b4, b5, node7);
 
   lf->Execute();*/
+
+  return 0;
 }
