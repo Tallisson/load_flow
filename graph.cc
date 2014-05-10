@@ -95,7 +95,6 @@ Bar * Graph::at(int v) {
   Bar * bV;
 
   if(v < size) {
-    int size = bars.size();
     for(int i = 0; i < size; i++) {
       bV = &(bars.at(i));
       if(bV->GetId() == v) {
