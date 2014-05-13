@@ -8,7 +8,7 @@ int main(int argc, char ** argv) {
   LoadFlow * lf = new LoadFlow(2, 0.003);
 
   Bar b1(0, 1, 0, 0, SLACK, 0);
-  Bar b2(0, 1, -0.4, 0.0, GENERATION, 1);
+  Bar b2(0, 1, -0.3, 0.07, LOAD, 1);
   lf->AddBar(b1);
   lf->AddBar(b2);
 
