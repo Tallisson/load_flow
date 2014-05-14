@@ -8,6 +8,10 @@ double Node::GetS() {
   return s;
 }
 
+double Node::GetSh() {
+  return sh;
+}
+
 void Node::SetC(double c) {
   this->c = c;
 }

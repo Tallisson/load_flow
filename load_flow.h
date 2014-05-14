@@ -34,10 +34,15 @@ private:
   void calcN();
   void calcM();
   void calcL();
+  void calcH(int k, int m);
+  void calcN(int k, int m);
+  void calcM(int k, int m);
+  void calcL(int k, int m);
   void calcJ();
   void initState();
   void initState(double aInitial, double vInitial);
   void updateState();
+  void calcS2(int k);
 
   bool nextIterate();
 
@@ -49,7 +54,9 @@ public:
   void Execute(double aInitial, double vInitial);
   void AddBar(Bar bar);
   void AssocBars(Bar v, Bar w, Node node);
+  void AssocBars(Bar v, Bar w, Admitt admitt);
   Graph * GetGraph();
   Bar * GetBar(int v);
   Node * GetEdge(int v, int w);
+  void SetSimetric(bool s);
 };

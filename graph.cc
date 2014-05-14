@@ -1,7 +1,7 @@
 #include "graph.h"
 #include <iostream>
 #include <string.h>
-
+#include <math.h>
 
 Graph::Graph(int numV):
 numV(numV), numE(0), simetric(true)
@@ -16,15 +16,17 @@ void Graph::AddEdge(Bar v, Bar w, Node impd) {
   if (v.GetId() < 0 || v.GetId() >= numV) throw 2;
   if (w.GetId() < 0 || w.GetId() >= numV) throw 2;
 
-  this->numE++;
-
   int idV = v.GetId();
   int idW = w.GetId();
-  Assoc(v, w, impd);
 
-  if(simetric && idV != idW) {
-    Assoc(w, v, impd);
+  if(idV != idW) {
     this->numE++;
+    Assoc(v, w, impd);
+
+    if(simetric /*&& idV != idW*/) {
+      Assoc(w, v, impd);
+      this->numE++;
+    }
   }
 }
 
@@ -84,6 +86,8 @@ void Graph::SetSimetric(bool simetric) {
 
 void Graph::AddV(Bar v) {
   int size = bars.size();
+  v.SetC(0);
+  v.SetS(0);
 
   if(size < numV) {
     bars.push_back(v);
@@ -104,4 +108,16 @@ Bar * Graph::at(int v) {
   }
 
   return NULL;
+}
+
+void Graph::AddEdge(Bar v, Bar w, Admitt admitt) {
+  double r = admitt.GetR();
+  double x = admitt.GetX();
+  double sh = (admitt.GetSh() ? admitt.GetSh() : 0);
+
+  double c = r / (pow(r, 2) + pow(x, 2));
+  double s = -c;
+  Node node(c, s, sh);
+
+  AddEdge(v, w, node);
 }

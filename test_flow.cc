@@ -5,9 +5,9 @@
 using namespace std;
 
 int main(int argc, char ** argv) {
-  LoadFlow * lf = new LoadFlow(2, 0.003);
+  LoadFlow * lf = new LoadFlow(5, 0.0001);
 
-  Bar b1(0, 1, 0, 0, SLACK, 0);
+  /*Bar b1(0, 1, 0, 0, SLACK, 0);
   Bar b2(0, 1, -0.3, 0.07, LOAD, 1);
   lf->AddBar(b1);
   lf->AddBar(b2);
@@ -15,15 +15,15 @@ int main(int argc, char ** argv) {
   Node node(0.1923, -0.9415);
   lf->AssocBars(b1, b1, node);
 
-  Node node1(-0.1923, 0.9615);
+  Node node1(-0.1923, 0.9615, 0.02);
   lf->AssocBars(b1, b2, node1);
 
   Node node2(0.1923, -0.9415);
-  lf->AssocBars(b2, b2, node2);
+  lf->AssocBars(b2, b2, node2);*/
 
-  lf->Execute();
+  //lf->Execute();
 
-  /*Bar b1(0, 1.06, 0, 0, SLACK, 0);
+  Bar b1(0, 1.06, 0, 0, SLACK, 0);
   Bar b2(0, 1.02, 0.2, 0, GENERATION, 1);
   Bar b3(0, 0, -0.45, -0.15, LOAD, 2);
   Bar b4(0, 0, -0.4, -0.05, LOAD, 3);
@@ -35,8 +35,8 @@ int main(int argc, char ** argv) {
   lf->AddBar(b4);
   lf->AddBar(b5);
 
-  Bar * b = lf->GetBar(1);
-  cout << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ", " << b->GetType() << ", " << b->GetId() << endl;
+  /*Bar * b = lf->GetBar(1);
+  cout << b->GetC() << endl;*/
 
   Node node1(5, -15);
   Node node2(1.25, -3.75);
@@ -54,7 +54,11 @@ int main(int argc, char ** argv) {
   lf->AssocBars(b3, b4, node6);
   lf->AssocBars(b4, b5, node7);
 
-  lf->Execute();*/
+  /*for(int i = 0; i < 5; i++) {
+    Bar * b = lf->GetBar(i);
+    cout << "Bar(" << b->GetId()+1 << ") Conductance: " << b->GetC() << ", Susceptance: " << b->GetS() << endl;
+  }*/
+  lf->Execute();
 
   return 0;
 }

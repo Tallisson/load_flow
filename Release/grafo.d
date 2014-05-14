@@ -1,0 +1,1 @@
+grafo.d: ../grafo.cc

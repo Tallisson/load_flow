@@ -5,27 +5,27 @@
 using namespace std;
 
 double Bar::GetAngle() {
-  return this->angle;
+  return angle;
 }
 
 double Bar::GetVoltage() {
-  return this->voltage;
+  return voltage;
 }
 
 double Bar::GetAPower() {
-  return this->aPower;
+  return aPower;
 }
 
 double Bar::GetRPower() {
-  return this->rPower;
+  return rPower;
 }
 
 int Bar::GetType() {
-  return this->type;
+  return type;
 }
 
 int Bar::GetId() {
-  return this->id;
+  return id;
 }
 
 void Bar::SetAngle(double angle) {
@@ -45,6 +45,8 @@ void Bar::SetRPower(double rPower) {
 }
 
 void Bar::AddN(Bar n, Node i) {
+  c += -i.GetC();
+  s += -i.GetS() + i.GetSh();
   neighbors.push_back(n);
   impd.push_back(i);
 }
@@ -61,4 +63,20 @@ Node * Bar::HasN(int w) {
   }
 
   return NULL;
+}
+
+double Bar::GetC() {
+  return c;
+}
+
+double Bar::GetS() {
+  return s;
+}
+
+void Bar::SetS(double s) {
+  this->s = s;
+}
+
+void Bar::SetC(double c) {
+  this->c = c;
 }

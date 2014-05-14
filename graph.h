@@ -1,5 +1,6 @@
 #include <vector>
 #include "bar.h"
+#include "admitt.h"
 
 using namespace std;
 
@@ -22,4 +23,5 @@ public:
   Node * GetEdge(int v, int w);
   void SetSimetric(bool simetric);
   Bar * at(int v);
+  void AddEdge(Bar v, Bar w, Admitt admitt);
 };
