@@ -1,9 +1,10 @@
-#include <vector>
+//#include <vector>
+#include <map>
 #include "node.h"
 
-#define SLACK 0
-#define LOAD 1
-#define GENERATION 2
+#define SLACK 3
+#define LOAD 2
+#define GENERATION 1
 
 using namespace std;
 
@@ -18,8 +19,10 @@ private:
   double c;
   double s;
 
-  vector<Bar> neighbors;
-  vector<Node> impd;
+  map<int, Bar*> neighbors;
+  map<int, Node*> impd;
+  /*vector<Bar> neighbors;
+  vector<Node> impd;*/
 
 public:
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id) :
@@ -49,6 +52,6 @@ public:
   void SetRPower(double rPower);
   void SetC(double c);
   void SetS(double s);
-  void AddN(Bar n, Node i);
+  void AddN(Bar* n, Node* i);
   Node * HasN(int w);
 };

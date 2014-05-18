@@ -8,54 +8,44 @@ numV(numV), numE(0), simetric(true)
 {
 }
 
+Graph::Graph():
+numV(0), numE(0), simetric(true)
+{
+}
+
 Graph::~Graph() {
   bars.clear();
 }
 
-void Graph::AddEdge(Bar v, Bar w, Node impd) {
-  if (v.GetId() < 0 || v.GetId() >= numV) throw 2;
-  if (w.GetId() < 0 || w.GetId() >= numV) throw 2;
-
-  int idV = v.GetId();
-  int idW = w.GetId();
+void Graph::AddEdge(Bar* v, Bar* w, Node* impd) {
+  int idV = v->GetId();
+  int idW = w->GetId();
 
   if(idV != idW) {
     this->numE++;
     Assoc(v, w, impd);
 
-    if(simetric /*&& idV != idW*/) {
+    if(simetric) {
       Assoc(w, v, impd);
       this->numE++;
     }
   }
 }
 
-void Graph::Assoc(Bar v, Bar w, Node impd) {
-  int size = bars.size();
-  Bar * tmp;
-  for(int i = 0; i < size; i++) {
-    tmp = &(bars.at(i));
-    if(tmp->GetId() == v.GetId()) {
-      tmp->AddN(w, impd);
-      break;
-    }
+void Graph::Assoc(Bar* v, Bar* w, Node* impd) {
+  int idV = v->GetId();
+  Bar * tmp = bars.at(idV);
+
+  if(tmp != NULL) {
+    tmp->AddN(w, impd);
   }
 }
 
 bool Graph::HasEdge(int v, int w) {
-  if (v < 0 || v >= numV) throw 2;
-  if (w < 0 || w >= numV) throw 2;
-
-  int size = bars.size();
-  Bar bV;
-  for(int i = 0; i < size; i++) {
-    bV = bars.at(i);
-    if(bV.GetId() == v) {
-      if(bV.HasN(w) != NULL) {
-        return true;
-      }
-
-      break;
+  Bar * bV = bars.at(v);
+  if(bV != NULL) {
+    if(bV->HasN(w) != NULL) {
+      return true;
     }
   }
 
@@ -63,18 +53,13 @@ bool Graph::HasEdge(int v, int w) {
 }
 
 Node * Graph::GetEdge(int v, int w) {
-  if (v < 0 || v >= numV) throw 2;
-  if (w < 0 || w >= numV) throw 2;
-
-  int size = bars.size();
   Bar * bV;
   Node * edge;
-  for(int i = 0; i < size; i++) {
-    bV = &(bars.at(i));
-    if(bV->GetId() == v) {
-      edge = bV->HasN(w);
-      return edge;
-    }
+
+  bV = bars.at(v);
+  if(bV != NULL) {
+    edge = bV->HasN(w);
+    return edge;
   }
 
   return NULL;
@@ -84,42 +69,28 @@ void Graph::SetSimetric(bool simetric) {
   this->simetric = simetric;
 }
 
-void Graph::AddV(Bar v) {
-  int size = bars.size();
-  v.SetC(0);
-  v.SetS(0);
-
-  if(size < numV) {
-    bars.push_back(v);
-  }
+void Graph::AddV(Bar* v) {
+  int idV = v->GetId();
+  bars.insert(pair<int, Bar*>(idV, v));
+  numV++;
 }
 
 Bar * Graph::at(int v) {
-  int size = bars.size();
-  Bar * bV;
+  Bar * bV = bars.at(v);
 
-  if(v < size) {
-    for(int i = 0; i < size; i++) {
-      bV = &(bars.at(i));
-      if(bV->GetId() == v) {
-        return bV;
-      }
-    }
-  }
-
-  return NULL;
+  return bV;
 }
 
-void Graph::AddEdge(Bar v, Bar w, Admitt admitt) {
-  double r = admitt.GetR();
-  double x = admitt.GetX();
-  double sh = (admitt.GetSh() ? admitt.GetSh() : 0);
+void Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
+  double r = admitt->GetR();
+  double x = admitt->GetX();
+  double sh = (admitt->GetSh() ? admitt->GetSh() : 0);
 
   double c = r / (pow(r, 2) + pow(x, 2));
   double s = -x / (pow(r, 2) + pow(x, 2));
-  cout << "G(" << v.GetId()+1 << w.GetId()+1 << ") = " << c << endl;
-  cout << "b(" << v.GetId()+1 << w.GetId()+1 << ") = " << s << endl;
-  Node node(c, s, sh);
+  /*cout << "G(" << v.GetId()+1 << w.GetId()+1 << ") = " << c << endl;
+  cout << "b(" << v.GetId()+1 << w.GetId()+1 << ") = " << s << endl;*/
+  Node * node = new Node(c, s, sh);
 
   AddEdge(v, w, node);
 }

@@ -9,7 +9,7 @@ public:
   {};
   Node(double c, double s, double sh): c(c), s(s), sh(sh)
   {};
-  Node(): c(0), s(0) {};
+  Node(): c(0), s(0), sh(0) {};
 
   double GetS();
   double GetC();

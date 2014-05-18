@@ -44,22 +44,20 @@ void Bar::SetRPower(double rPower) {
   this->rPower = rPower;
 }
 
-void Bar::AddN(Bar n, Node i) {
-  c += -i.GetC();
-  s += -i.GetS() + i.GetSh();
-  neighbors.push_back(n);
-  impd.push_back(i);
+void Bar::AddN(Bar* n, Node* i) {
+  c += -i->GetC();
+  s += -i->GetS() + i->GetSh();
+
+  int id = n->GetId();
+  neighbors.insert(pair<int, Bar*>(id, n));
+  impd.insert(pair<int, Node*>(id, i));
 }
 
 Node * Bar::HasN(int w) {
-  int size = neighbors.size();
-  Bar bW;
-  for(int i = 0; i < size; i++) {
-    bW = neighbors.at(i);
-    if(bW.GetId() == w) {
-      Node * imp = &(impd.at(i));
-      return imp;
-    }
+  Bar* bW = neighbors.at(w);
+  if(bW != NULL) {
+    Node* imp = impd.at(w);
+    return imp;
   }
 
   return NULL;
