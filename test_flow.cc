@@ -1,11 +1,13 @@
 #include "load_flow.h"
 #include <vector>
 #include <iostream>
+#include <armadillo>
 
 using namespace std;
+using namespace arma;
 
 int main(int argc, char ** argv) {
-  LoadFlow * lf = new LoadFlow(5, 0.0001);
+  LoadFlow * lf = new LoadFlow(5, 0.001);
 
   /*Bar b1(0, 1, 0, 0, SLACK, 0);
   Bar b2(0, 1, -0.3, 0.07, LOAD, 1);
@@ -38,7 +40,28 @@ int main(int argc, char ** argv) {
   /*Bar * b = lf->GetBar(1);
   cout << b->GetC() << endl;*/
 
-  Node node1(5, -15);
+  Admitt admmit1(0.02, 0.06, 0.0);
+  Admitt admmit2(0.08, 0.24, 0.0);
+  Admitt admmit3(0.06, 0.18, 0.0);
+  Admitt admmit4(0.06, 0.18, 0.0);
+  Admitt admmit5(0.04, 0.12, 0.0);
+  Admitt admmit6(0.01, 0.03, 0.0);
+  Admitt admmit7(0.08, 0.24, 0.0);
+
+  lf->AssocBars(b1, b2, admmit1);
+  lf->AssocBars(b1, b3, admmit2);
+  lf->AssocBars(b2, b3, admmit3);
+  lf->AssocBars(b2, b4, admmit4);
+  lf->AssocBars(b2, b5, admmit5);
+  lf->AssocBars(b3, b4, admmit6);
+  lf->AssocBars(b4, b5, admmit7);
+
+  Bar * bar;
+  for(int i = 0; i < 3; i++) {
+    bar = lf->GetBar(i);
+    cout << "C: " << bar->GetC() << ", " << "S: " << bar->GetS() << endl;
+  }
+  /*Node node1(5, -15);
   Node node2(1.25, -3.75);
   Node node3(1.666, -5);
   Node node4(1.666, -5);
@@ -52,7 +75,7 @@ int main(int argc, char ** argv) {
   lf->AssocBars(b2, b4, node4);
   lf->AssocBars(b2, b5, node5);
   lf->AssocBars(b3, b4, node6);
-  lf->AssocBars(b4, b5, node7);
+  lf->AssocBars(b4, b5, node7);*/
 
   /*for(int i = 0; i < 5; i++) {
     Bar * b = lf->GetBar(i);

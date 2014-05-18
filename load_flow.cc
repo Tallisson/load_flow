@@ -109,7 +109,7 @@ void LoadFlow::calcPower() {
 
     if(barK->GetType() != SLACK) {
       estP(k) = barK->GetVoltage() * barK->GetVoltage() * barK->GetC();
-
+      //cout << barK->GetVoltage() * barK->GetVoltage() * barK->GetC() << endl;
       for(int m = 0; m < numB; m++) {
         if(k != m) {
           Bar * barM = bars->at(m);
@@ -131,7 +131,7 @@ void LoadFlow::calcPower() {
     sum = 0;
 
     if(barK->GetType() != SLACK) {
-      estP(i) = -barK->GetVoltage() * barK->GetVoltage() * barK->GetS();
+      estP(i) = -barK->GetVoltage() * barK->GetVoltage() * (barK->GetS());
 
       for(int m = 0; m < numB; m++) {
         if(k != m) {
@@ -149,7 +149,6 @@ void LoadFlow::calcPower() {
 
       estP(i) += barK->GetVoltage() * sum;
     }
-
   }
 }
 
@@ -436,12 +435,13 @@ void LoadFlow::Execute() {
       break;
 
     calcJ();
+    cout << jacobian << endl;
     diffState();
     updateState();
 
     counter++;
   }
-
+  //cout << diffP << endl;
   cout << "Número de iterações: " << counter << endl;
   Bar * b;
   for(int i = 0; i < numB; i++) {
@@ -458,7 +458,8 @@ void LoadFlow::Execute() {
   for(int i = 0; i < numB; i++) {
     b = bars->at(i);
 
-    cout << "Barra(" << b->GetId() << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
+    cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
+    //printf("Angulo: %.4f, Voltagem: %.4f, Potência Ativa: %.4f, Potência Reativa: %.4f\n", b->GetAngle(), b->GetVoltage(), b->GetAPower(), b->GetRPower());
   }
 }
 

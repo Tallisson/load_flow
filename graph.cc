@@ -116,7 +116,9 @@ void Graph::AddEdge(Bar v, Bar w, Admitt admitt) {
   double sh = (admitt.GetSh() ? admitt.GetSh() : 0);
 
   double c = r / (pow(r, 2) + pow(x, 2));
-  double s = -c;
+  double s = -x / (pow(r, 2) + pow(x, 2));
+  cout << "G(" << v.GetId()+1 << w.GetId()+1 << ") = " << c << endl;
+  cout << "b(" << v.GetId()+1 << w.GetId()+1 << ") = " << s << endl;
   Node node(c, s, sh);
 
   AddEdge(v, w, node);
