@@ -45,8 +45,8 @@ void Bar::SetRPower(double rPower) {
 }
 
 void Bar::AddN(Bar* n, Node* i) {
-  c += -i->GetC();
-  s += -i->GetS() + i->GetSh();
+  c += i->GetC();
+  s += i->GetS() + i->GetSh();
 
   int id = n->GetId();
   neighbors.insert(pair<int, Bar*>(id, n));
@@ -77,4 +77,20 @@ void Bar::SetS(double s) {
 
 void Bar::SetC(double c) {
   this->c = c;
+}
+
+map<int, Node*> Bar::GetWeight() {
+  return impd;
+}
+
+map<int, Bar*> Bar::GetNs() {
+  return neighbors;
+}
+
+int Bar::GetBSh() {
+  return bSh;
+}
+
+Node* Bar::GetEdge(int n) {
+  return impd.at(n);
 }

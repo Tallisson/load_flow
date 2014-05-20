@@ -94,3 +94,11 @@ void Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
 
   AddEdge(v, w, node);
 }
+
+map<int, Bar*> Graph::GetBars() {
+  return bars;
+}
+
+int Graph::GetSize() {
+  return bars.size();
+}

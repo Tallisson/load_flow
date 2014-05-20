@@ -18,6 +18,7 @@ private:
   int id;
   double c;
   double s;
+  double bSh;
 
   map<int, Bar*> neighbors;
   map<int, Node*> impd;
@@ -25,15 +26,15 @@ private:
   vector<Node> impd;*/
 
 public:
-  Bar(double angle, double voltage, double aPower, double rPower, int type, int id) :
-      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id)
+  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :
+      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id), bSh(bSh)
   {};
-  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double c, double s) :
-      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id), c(c), s(s)
+  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double c, double s, double bSh) :
+      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id), c(c), s(s), bSh(bSh)
   {};
 
   Bar():
-    angle(0), voltage(0), aPower(0), rPower(0), type(0), id(0), c(0), s(0)
+    angle(0), voltage(0), aPower(0), rPower(0), type(0), id(0), c(0), s(0), bSh(0)
   {};
 
   double GetAngle();
@@ -45,6 +46,7 @@ public:
 
   int GetType();
   int GetId();
+  int GetBSh();
 
   void SetAngle(double angle);
   void SetVoltage(double voltage);
@@ -54,4 +56,7 @@ public:
   void SetS(double s);
   void AddN(Bar* n, Node* i);
   Node * HasN(int w);
+  map<int, Bar*> GetNs();
+  map<int, Node*> GetWeight();
+  Node * GetEdge(int n);
 };

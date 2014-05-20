@@ -17,46 +17,45 @@ typedef struct point {
 class LoadFlow {
 private:
   int numB;
+  int nPV;
+  int nPQ;
+  int cont;
   mat jacobian;
   vec estP;
   vec estS;
-  vec diffS;
   vec diffP;
+  vec diffS;
+  map<int, int> ord;
 
   Graph * bars;
   double error;
   vector<point> points;
 
-  void calcPower();
-  void diffPower();
-  void diffState();
-  void calcH();
-  void calcN();
-  void calcM();
-  void calcL();
-  void calcH(int k, int m);
-  void calcN(int k, int m);
-  void calcM(int k, int m);
-  void calcL(int k, int m);
+  void mismatches();
+  void solveSys();
   void calcJ();
   void initState();
   void initState(double aInitial, double vInitial);
+  void initJ();
   void updateState();
-  void calcS2(int k);
-
+  void calcS2();
+  void initialize();
   bool nextIterate();
 
 public:
   LoadFlow(int numB, double error);
+  LoadFlow(int numB);
   ~LoadFlow();
 
   void Execute();
   void Execute(double aInitial, double vInitial);
-  void AddBar(Bar bar);
-  void AssocBars(Bar v, Bar w, Node node);
-  void AssocBars(Bar v, Bar w, Admitt admitt);
+  void AddBar(Bar* bar);
+  void AssocBars(Bar* v, Bar* w, Node* node);
+  void AssocBars(Bar* v, Bar* w, Admitt* admitt);
   Graph * GetGraph();
   Bar * GetBar(int v);
   Node * GetEdge(int v, int w);
   void SetSimetric(bool s);
+  void DpDer();
+  void DqDer();
 };

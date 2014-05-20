@@ -5,92 +5,144 @@ using namespace std;
 
 #define ANGLE_INIT 0
 #define VOLTAGE_INIT 1
+#define ERROR 0.0001
 
 LoadFlow::LoadFlow(int numB, double error):
-    numB(numB), error(error) {
-  bars = new Graph(numB);
+    numB(0), nPV(0), nPQ(0), cont(0), error(error)
+{
+  bars = new Graph();
+}
 
-  int size = numB << 1;
-  jacobian = zeros<mat>(size, size);
-  estP = zeros<vec>(size);
-  estS = zeros<vec>(size);
-  diffP = zeros<vec>(size);
-  diffS = zeros<vec>(size);
+LoadFlow::LoadFlow(int numB):
+    numB(0), nPV(0), nPQ(0), cont(0), error(ERROR)
+{
+  bars = new Graph();
 }
 
 LoadFlow::~LoadFlow() {
   delete bars;
 }
 
-void LoadFlow::AddBar(Bar bar) {
+void LoadFlow::AddBar(Bar* bar) {
+  if(bar->GetType() == GENERATION) {
+    nPV++;
+    ord.insert(pair<int, int>(bar->GetId(), cont++));
+  }
+
+  if(bar->GetType() == LOAD) {
+    ord.insert(pair<int, int>(bar->GetId(), cont++));
+    ++nPQ;
+  }
+
   bars->AddV(bar);
+  numB++;
+}
+
+Bar * LoadFlow::GetBar(int v) {
+  return bars->at(v);
 }
 
 Graph * LoadFlow::GetGraph() {
   return this->bars;
 }
 
+void LoadFlow::AssocBars(Bar* v, Bar* w, Node* node) {
+  bars->AddEdge(v, w, node);
+}
+
+void LoadFlow::AssocBars(Bar* v, Bar* w, Admitt* admitt) {
+  bars->AddEdge(v, w, admitt);
+}
+
+Node * LoadFlow::GetEdge(int v, int w) {
+  Node * edge = bars->GetEdge(v, w);
+  return edge;
+}
+
+void LoadFlow::SetSimetric(bool s) {
+  bars->SetSimetric(s);
+}
+
 void LoadFlow::initState() {
   Bar * bar;
+  map<int, Bar*> nodes = bars->GetBars();
 
-  for(int k = 0; k < numB; k++) {
-    if(k < numB) {
-      bar = bars->at(k);
+  for (std::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
+    bar = it->second;
 
-      if(bar->GetType() != SLACK) {
-        bar->SetAngle(ANGLE_INIT);
-      }
+    if(bar->GetType() != SLACK) {
+      bar->SetAngle(ANGLE_INIT);
+    }
 
-      if(bar->GetType() == LOAD) {
-        bar->SetVoltage(VOLTAGE_INIT);
-      }
+    if(bar->GetType() == LOAD) {
+      bar->SetVoltage(VOLTAGE_INIT);
     }
   }
 }
 
 void LoadFlow::initState(double aInitial, double vInitial) {
   Bar * bar;
+  map<int, Bar*> nodes = bars->GetBars();
 
-  for(int k = 0; k < numB; k++) {
-    if(k < numB) {
-      bar = bars->at(k);
+  for (std::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
+    bar = it->second;
 
-      if(bar->GetType() != SLACK) {
-        bar->SetAngle(aInitial);
-      }
+    if(bar->GetType() != SLACK) {
+      bar->SetAngle(aInitial);
+    }
 
-      if(bar->GetType() == LOAD) {
-        bar->SetVoltage(vInitial);
-      }
+    if(bar->GetType() == LOAD) {
+      bar->SetVoltage(vInitial);
     }
   }
+}
+
+
+void LoadFlow::initialize() {
+  int s = nPV + (nPQ << 1);
+
+  jacobian = zeros<mat>(s, s);
+  estP = zeros<vec>(s);
+  estS = zeros<vec>(s);
+  diffP = zeros<vec>(s);
+  diffS = zeros<vec>(s);
+  initState();
+}
+
+void LoadFlow::initJ() {
+  int s = nPV + (nPQ << 1);
+  jacobian = zeros<mat>(s, s);
 }
 
 void LoadFlow::updateState() {
   Bar * barK;
 
-  for(int k = 0; k < numB; k++) {
-    barK = bars->at(k);
+  std::map<int, int>::iterator it=ord.begin();
+  for(int k = 0; it != ord.end(); k++) {
+    barK = bars->at(it->first);
 
     if(barK->GetType() != SLACK)
       barK->SetAngle(barK->GetAngle() + diffS(k));
 
     if(barK->GetType() == LOAD) {
-      int i = k + numB;
+      int i = k + nPQ;
       barK->SetVoltage(barK->GetVoltage() + diffS(i));
     }
+
+    it++;
   }
 }
 
 bool LoadFlow::nextIterate() {
   int i = 0;
 
-  for(int k = 0; k < numB; k++) {
+  int s = nPQ + nPV;
+  for(int k = 0; k < s; k++) {
     if( error < abs(diffP(k)) ) {
       return true;
     }
 
-    i = k + numB;
+    i = k + nPQ;
     if( error < abs(diffP(i)) ) {
       return true;
     }
@@ -99,371 +151,266 @@ bool LoadFlow::nextIterate() {
   return false;
 }
 
-void LoadFlow::calcPower() {
+void LoadFlow::mismatches() {
   double theta;
-  double sum;
+  map<int, Bar*> nodes = bars->GetBars();
 
-  for(int k = 0; k < numB; k++) {
-    sum = 0;
-    Bar * barK = bars->at(k);
-
-    if(barK->GetType() != SLACK) {
-      estP(k) = barK->GetVoltage() * barK->GetVoltage() * barK->GetC();
-      //cout << barK->GetVoltage() * barK->GetVoltage() * barK->GetC() << endl;
-      for(int m = 0; m < numB; m++) {
-        if(k != m) {
-          Bar * barM = bars->at(m);
-          Node * edge = bars->GetEdge(k, m);
-
-          if(edge != NULL) {
-            theta =  barK->GetAngle() - barM->GetAngle();
-
-            sum += barM->GetVoltage() * (edge->GetC() * cos(theta) +
-                              edge->GetS() * sin(theta));
-          }
-        }
-      }
-
-      estP(k) += (barK->GetVoltage() * sum);
-    }
-
-    int i = k + numB;
-    sum = 0;
+  std::map<int, int>::iterator it=ord.begin();
+  for(int k = 0; it != ord.end(); k++) {
+    Bar * barK = bars->at(it->first);
+    Bar * barM;
 
     if(barK->GetType() != SLACK) {
-      estP(i) = -barK->GetVoltage() * barK->GetVoltage() * (barK->GetS());
+      double vK = barK->GetVoltage();
+      estP(k) = barK->GetC() * pow(vK, 2);
+      map<int, Node*> neighbors = barK->GetWeight();
 
-      for(int m = 0; m < numB; m++) {
-        if(k != m) {
-          Bar * barM = bars->at(m);
-          Node * edge = bars->GetEdge(k, m);
+      Node* edge;
+      int m;
+      for (std::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
+        m = it->first;
+        barM = bars->at(m);
+        edge = it->second;
+        theta = barK->GetAngle() - barM->GetAngle();
 
-          if(edge != NULL) {
-            theta =  barK->GetAngle() - barM->GetAngle();
-
-            sum += barM->GetVoltage() * (edge->GetC() * sin(theta) -
-                              edge->GetS() * cos(theta));
-          }
-        }
+        estP(k) +=  -vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
       }
-
-      estP(i) += barK->GetVoltage() * sum;
     }
+    diffP(k) = barK->GetAPower() - estP(k);
+
+    int i = k + nPQ;
+    if(barK->GetType() == LOAD) {
+      double vK = barK->GetVoltage();
+      estP(i) = -pow(vK, 2) * barK->GetS();
+      map<int, Node*> neighbors = barK->GetWeight();
+
+      Node* edge;
+      int m;
+      for (std::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
+        m = it->first;
+        barM = bars->at(m);
+        edge = it->second;
+        theta = barK->GetAngle() - barM->GetAngle();
+
+        estP(i) += vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
+      }
+    }
+    diffP(i) = barK->GetRPower() - estP(i);
+
+    it++;
   }
 }
 
-void LoadFlow::calcS2(int k) {
-  double theta;
-  Bar * barK = bars->at(k);
-  double sum = 0;
-  double result = barK->GetVoltage() * barK->GetVoltage() * barK->GetC();
-
-  for(int m = 0; m < numB; m++) {
-    if(k != m) {
-      Bar * barM = bars->at(m);
-      Node * edge = bars->GetEdge(k, m);
-
-      if(edge != NULL) {
-        theta =  barK->GetAngle() - barM->GetAngle();
-
-        sum += barM->GetVoltage() * (edge->GetC() * cos(theta) +
-                          edge->GetS() * sin(theta));
-      }
-    }
-  }
-  result += barK->GetVoltage() * sum;
-  barK->SetAPower(result);
-
-  sum = 0;
-  result = -barK->GetVoltage() * barK->GetVoltage() * barK->GetS();
-
-  for(int m = 0; m < numB; m++) {
-    if(k != m) {
-      Bar * barM = bars->at(m);
-      Node * edge = bars->GetEdge(k, m);
-
-      if(edge != NULL) {
-        theta =  barK->GetAngle() - barM->GetAngle();
-
-        sum += barM->GetVoltage() * (edge->GetC() * sin(theta) -
-                          edge->GetS() * cos(theta));
-      }
-    }
-  }
-
-  result += barK->GetVoltage() * sum;
-  barK->SetRPower(result);
+void LoadFlow::solveSys() {
+  mat m = inv(jacobian);
+  diffS = m*-diffP;
 }
 
-void LoadFlow::diffPower() {
-  int i = 0;
-  Bar * barK;
+void LoadFlow::DpDer() {
+  Bar * barK, * barM;
 
-  for(int k = 0; k < numB; k++) {
-    barK = bars->at(k);
+  std::map<int, int>::iterator it=ord.begin();
+  for(int k = 0; k < nPQ + nPV; k++) {
+    barK = bars->at(it->first);
+    int m = 0;
 
     if(barK->GetType() != SLACK) {
-      diffP(k) = barK->GetAPower() - estP(k);
+      map<int, Bar*> neighbors = barK->GetNs();
+      for(std::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node * edge = barK->GetEdge(barM->GetId());
+
+        // dPk em relação a 'ak '.
+        // -V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm)) + Jac(k-1, k-1);
+        cout << -barK->GetVoltage() * barM->GetVoltage() << "-220" << endl;
+        jacobian(k, k) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta)) + jacobian(k, k);
+
+        // dPk em relação a 'am' (exceto quando m for a barra slack).
+        if(barM->GetType() != SLACK) {
+          // V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm));
+          //cout << "M: " << m << endl;
+          m = ord.at(barM->GetId());
+          jacobian(k, m) = barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta));
+        }
+
+        // dPk em relação a 'vk'.
+        if(barK->GetType() == LOAD) {
+          // -2*g(km)*V(k) + V(m)*(g(km)*cos(akm)+b(km)*sin(akm)) + Jac(k-1, nb-1+ordPQ(k));
+          m = ord.at(barK->GetId());
+          int index = m + nPQ;
+          if(index < nPV + nPQ) {
+            index++;
+          }
+          jacobian(k, index) = -2 * edge->GetC() * barK->GetVoltage() + barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta))
+                                  + jacobian(k, index);
+        }
+
+        // dPk em relação a 'vm'.
+        if(barM->GetType() == LOAD) {
+          // V(k)*(g(km)*cos(akm)+b(km)*sin(akm));
+          m = ord.at(barM->GetId());
+          int index = m + nPQ;
+          if(index < nPV + nPQ) {
+            index++;
+          }
+          jacobian(k, index) = barK->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+        }
+      }
     }
+
+    it++;
+  }
+}
+
+void LoadFlow::DqDer() {
+  Bar * barK, * barM;
+
+  std::map<int, int>::iterator it=ord.begin();
+  int s = nPV+ (nPQ << 1);
+  for(int k = nPQ+nPV; k < s; ) {
+    barK = bars->at(it->first);
+    int m = 0;
 
     if(barK->GetType() == LOAD) {
-      i = k + numB;
-      diffP(i) = barK->GetRPower() - estP(i);
+      map<int, Bar*> neighbors = barK->GetNs();
+      //std::map<int, int>::iterator it = ord.find(barK->GetId());
+
+      for(std::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node * edge = barK->GetEdge(barM->GetId());
+
+        // dQk em relaçao a 'ak'.
+        // V(k)*V(m)*(b(km)*sin(akm)+g(km)*cos(akm)) + Jac(nb-1+ordPQ(k), k-1);
+        m = ord.at(barK->GetId());
+        jacobian(k, m) = barK->GetVoltage() * barM->GetVoltage() * (edge->GetS() * sin(theta) + edge->GetC() * cos(theta))
+                          + jacobian(k, m);
+
+        // dQk em relaçao a 'am' (exceto quando m for a barra slack).
+        if(barM->GetType() != SLACK) {
+          // -V(k)*V(m)*(g(km)*cos(akm)+b(km)*sin(akm));
+          m = ord.at(barM->GetId());
+          jacobian(k, m) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+        }
+
+        // dQk em relaçao a 'vk'.
+        // 2*(b(km)+bsh(km))*V(k) - V(m)*(b(km)*cos(akm)-g(km)*sin(akm)) + Jac(nb-1+ordPQ(k), nb-1+ordPQ(k));
+        jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * barK->GetVoltage() -
+                              barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)) + jacobian(k, k);
+        // dQk em relacao a 'vm'.
+        if(barM->GetType() == LOAD) {
+          // -V(k)*(b(km)*cos(akm)-g(km)*sin(akm));
+          m = ord.at(barM->GetId());
+          int index = m + nPQ;
+          if(index < nPV + nPQ) {
+            index++;
+          }
+          jacobian(k, index) = -barK->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
+        }
+      }
+
+      // dQk em relaçao a 'vk' (continuação).
+      // 2*Bsh(k)*V(k)
+      jacobian(k, k) = 2*barK->GetBSh() * barK->GetVoltage() + jacobian(k, k);
+      k++;
     }
+
+    it++;
   }
-}
-
-void LoadFlow::diffState() {
-  vector<point>::size_type s = sqrt(points.size());
-  mat m(s, s);
-
-  int k = 0;
-  for(unsigned i = 0; i < s; i++) {
-    for(unsigned j = 0; j < s; j++) {
-      point p = points[k++];
-      m(i, j) = jacobian(p.row, p.col);
-    }
-  }
-
-  m = inv(m);
-  k = 0;
-  for(unsigned i = 0; i < s; i++) {
-    for(unsigned j = 0; j < s; j++) {
-      point p = points[k++];
-      jacobian(p.row, p.col) = m(i, j);
-    }
-  }
-
-  points.clear();
-  diffS = jacobian * diffP;
 }
 
 void LoadFlow::calcJ() {
-  int s = numB << 1;
-  for(int k = 0; k < s; k++) {
-    for(int m = 0; m < s; m++) {
-
-      if(k < numB && m < numB) {
-        calcH(k, m);
-      }
-
-      if(k < numB && m >= numB) {
-        calcN(k, m);
-      }
-
-      if(k >= numB && m < numB) {
-        calcM(k, m);
-      }
-
-      if(k >= numB && m >= numB) {
-        calcL(k, m);
-      }
-    }
-  }
+  initJ();
+  DpDer();
+  DqDer();
 }
 
-void LoadFlow::calcH(int k, int m) {
-  double theta;
-  Bar * barK = bars->at(k);
-  Bar * barM = bars->at(m);
+void LoadFlow::calcS2() {
+  Bar * barK, * barM;
+  map<int, Bar*> nodes = bars->GetBars();
 
-  if(k != m) {
-    if(barK->GetType() != SLACK && barM->GetType() != SLACK) {
-      Node * edge = bars->GetEdge(k, m);
+  for(std::map<int, Bar*>::iterator it = nodes.begin(); it != nodes.end(); it++) {
+    barK = it->second;
 
-      if(edge != NULL) {
-        theta = barK->GetAngle() - barM->GetAngle();
+    if(barK->GetType() == SLACK) {
+      double sum = 0;
+      map<int, Bar*> neighbors = barK->GetNs();
 
-        jacobian(k, m) = barK->GetVoltage() * barM->GetVoltage() *
-                              (edge->GetC() * sin(theta) - edge->GetS() * cos(theta));
+      for(std::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node* edge = barK->GetEdge(barM->GetId());
+
+        // (gkm(km)*V(k)^2 - V(k)*V(m)*(gkm(km)*cos(akm)+bkm(km)*sin(akm)));
+        double vK = barK->GetVoltage();
+        sum += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
       }
+      barK->SetAPower(sum);
 
-      point p(k, m);
-      points.push_back(p);
     }
-  } else {
-    if(barK->GetType() != SLACK) {
-        jacobian(k, k) = -barK->GetVoltage() * barK->GetVoltage() * barK->GetS() - estP(k + numB);
 
-        point p(k, k);
-        points.push_back(p);
-    }
-  }
+    if(barK->GetType() != LOAD) {
+      double sum = 0;
+      map<int, Bar*> neighbors = barK->GetNs();
 
-}
+      for(std::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node* edge = barK->GetEdge(barM->GetId());
 
-
-void LoadFlow::calcN(int k, int m) {
-  double theta;
-  int colJ = m - numB;
-
-  Bar * barK = bars->at(k);
-  Bar * barM = bars->at(colJ);
-
-  if(k != colJ) {
-    if(barK->GetType() != SLACK && barM->GetType() == LOAD) {
-      Node * edge = bars->GetEdge(k, colJ);
-
-      if(edge != NULL) {
-        theta = barK->GetAngle() - barM->GetAngle();
-        jacobian(k, m) = barK->GetVoltage() *
-                            (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+        // (-(bkm(km)+bkm_sh(km))*V(k)^2 + V(k)*V(m)*(bkm(km)*cos(akm)-gkm(km)*sin(akm)));
+        double vK = barK->GetVoltage();
+        sum += (-(edge->GetS() + edge->GetSh()) * pow(vK,2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)) );
       }
+      barK->SetRPower(sum);
 
-      point p(k, m);
-      points.push_back(p);
-    }
-  } else {
-    if(barK->GetType() == LOAD) {
-      jacobian(k, m) = (barK->GetVoltage() * barK->GetVoltage() * barK->GetC() + estP(k)) / barK->GetVoltage();
-
-      point p(k, m);
-      points.push_back(p);
-    }
-  }
-
-}
-
-void LoadFlow::calcM(int k, int m) {
-  double theta;
-  int rowJ = k - numB;
-  Bar * barK = bars->at(rowJ);
-  Bar *barM = bars->at(m);
-
-  if(rowJ != m) {
-    if(barK->GetType() == LOAD && barM->GetType() != SLACK) {
-      Node * edge = bars->GetEdge(rowJ, m);
-
-      if(edge != NULL) {
-        theta = barK->GetAngle() - barM->GetAngle();
-        jacobian(k, m) = -barK->GetVoltage() * barM->GetVoltage() *
-                            (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
-      }
-
-      point p(k, m);
-      points.push_back(p);
-    }
-  } else {
-    if(barK->GetType() == LOAD) {
-      jacobian(k, m) = -barK->GetC() * barK->GetVoltage() * barK->GetVoltage() + estP(rowJ);
-
-      point p(k, m);
-      points.push_back(p);
-    }
-  }
-
-}
-
-void LoadFlow::calcL() {
-  double theta;
-  int rowJ, colJ;
-
-  for(int k = 0; k < numB; k++) {
-    Bar * barK = bars->at(k);
-
-    for(int m = 0; m < numB; m++) {
-      rowJ = k + numB;
-      colJ = m + numB;
-      Bar * barM = bars->at(m);
-
-      if(k != m) {
-        if(barK->GetType() == LOAD && barM->GetType() == LOAD) {
-          Node * edge = bars->GetEdge(k, m);
-
-          if(edge != NULL) {
-            theta = barK->GetAngle() - barM->GetAngle();
-
-            jacobian(rowJ, colJ) = barK->GetVoltage() *
-                                 (edge->GetC() * sin(theta) - edge->GetS() * cos(theta));
-          }
-          point p(rowJ, colJ);
-          points.push_back(p);
-        }
-
-      } else {
-        if(barK->GetType() == LOAD) {
-          jacobian(rowJ, colJ) = (-barK->GetS() * barK->GetVoltage() * barK->GetVoltage() + estP(k + numB)) / barK->GetVoltage();
-
-          point p(rowJ, colJ);
-          points.push_back(p);
-        }
-      }
-    }
-  }
-}
-
-void LoadFlow::calcL(int k, int m) {
-  double theta;
-  int rowJ = k - numB;
-  int colJ = m - numB;
-
-  Bar * barK = bars->at(rowJ);
-  Bar * barM = bars->at(colJ);
-
-  if(rowJ != colJ) {
-    if(barK->GetType() == LOAD && barM->GetType() == LOAD) {
-      Node * edge = bars->GetEdge(rowJ, colJ);
-
-      if(edge != NULL) {
-        theta = barK->GetAngle() - barM->GetAngle();
-        jacobian(k, m) = barK->GetVoltage() *
-                             (edge->GetC() * sin(theta) - edge->GetS() * cos(theta));
-      }
-      point p(k, m);
-      points.push_back(p);
-    }
-
-  } else {
-    if(barK->GetType() == LOAD) {
-      jacobian(k, m) = (-barK->GetS() * barK->GetVoltage() * barK->GetVoltage() + estP(rowJ + numB)) / barK->GetVoltage();
-
-      point p(k, m);
-      points.push_back(p);
     }
   }
 }
 
 void LoadFlow::Execute() {
   int counter = 0;
-
-  initState();
+  initialize();
+  for(int i = 0; i < numB; i++) {
+    Bar * tmp = bars->at(i+1);
+    cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
+  }
+  mismatches();
+  cout << "Erro: " << endl << diffP << endl;
   while(true) {
-    calcPower();
-    diffPower();
+    calcJ();
+    cout << "Jac" << endl << jacobian << endl;
+
+    solveSys();
+    cout << "dx" << endl << diffS << endl;
+
+    updateState();
+    for(int i = 0; i < numB; i++) {
+      Bar * tmp = bars->at(i+1);
+      cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
+    }
+
+    counter++;
+
+    mismatches();
+    cout << "Erro: " << endl << diffP << endl;
 
     if(nextIterate() == false)
       break;
-
-    calcJ();
-    cout << jacobian << endl;
-    diffState();
-    updateState();
-
-    counter++;
   }
-  //cout << diffP << endl;
-  cout << "Número de iterações: " << counter << endl;
-  Bar * b;
-  for(int i = 0; i < numB; i++) {
-    b = bars->at(i);
-    if(b->GetType() == SLACK) {
-      calcS2(i);
-    }
-
-    if(b->GetType() == GENERATION) {
-      b->SetRPower(estP(i + numB));
-    }
-  }
+  calcS2();
+  cout << "O processo convergiu com " << counter << " iterações\n" << endl;
 
   for(int i = 0; i < numB; i++) {
-    b = bars->at(i);
+    Bar * b = bars->at(i+1);
 
-    cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
-    //printf("Angulo: %.4f, Voltagem: %.4f, Potência Ativa: %.4f, Potência Reativa: %.4f\n", b->GetAngle(), b->GetVoltage(), b->GetAPower(), b->GetRPower());
+    //cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
+    printf("Barra(%d)=> Angulo: %.4f, Voltagem: %.4f, Potência Ativa: %.4f, Potência Reativa: %.4f\n", b->GetId(), b->GetAngle(), b->GetVoltage(), b->GetAPower(), b->GetRPower());
   }
 }
 
-void LoadFlow::Execute(double aInitial, double vInitial) {
+/*void LoadFlow::Execute(double aInitial, double vInitial) {
   int counter = 0;
 
   initState(aInitial, vInitial);
@@ -497,25 +444,4 @@ void LoadFlow::Execute(double aInitial, double vInitial) {
     b = bars->at(i);
     cout << "Barra(" << b->GetId() << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
   }
-}
-
-Bar * LoadFlow::GetBar(int v) {
-  return bars->at(v);
-}
-
-void LoadFlow::AssocBars(Bar v, Bar w, Node node) {
-  bars->AddEdge(v, w, node);
-}
-
-Node * LoadFlow::GetEdge(int v, int w) {
-  Node * edge = bars->GetEdge(v, w);
-  return edge;
-}
-
-void LoadFlow::SetSimetric(bool s) {
-  bars->SetSimetric(s);
-}
-
-void LoadFlow::AssocBars(Bar v, Bar w, Admitt admitt) {
-  bars->AddEdge(v, w, admitt);
-}
+}*/
