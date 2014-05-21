@@ -43,8 +43,8 @@ private:
   bool nextIterate();
 
 public:
-  LoadFlow(int numB, double error);
-  LoadFlow(int numB);
+  LoadFlow(double error);
+  LoadFlow();
   ~LoadFlow();
 
   void Execute();

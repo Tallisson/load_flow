@@ -7,13 +7,13 @@ using namespace std;
 #define VOLTAGE_INIT 1
 #define ERROR 0.0001
 
-LoadFlow::LoadFlow(int numB, double error):
+LoadFlow::LoadFlow(double error):
     numB(0), nPV(0), nPQ(0), cont(0), error(error)
 {
   bars = new Graph();
 }
 
-LoadFlow::LoadFlow(int numB):
+LoadFlow::LoadFlow():
     numB(0), nPV(0), nPQ(0), cont(0), error(ERROR)
 {
   bars = new Graph();
@@ -175,8 +175,9 @@ void LoadFlow::mismatches() {
 
         estP(k) +=  -vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
       }
+
+      diffP(k) = barK->GetAPower() - estP(k);
     }
-    diffP(k) = barK->GetAPower() - estP(k);
 
     int i = k + nPQ;
     if(barK->GetType() == LOAD) {
@@ -194,11 +195,13 @@ void LoadFlow::mismatches() {
 
         estP(i) += vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
       }
+
+      diffP(i) = barK->GetRPower() - estP(i);
     }
-    diffP(i) = barK->GetRPower() - estP(i);
 
     it++;
   }
+
 }
 
 void LoadFlow::solveSys() {
@@ -223,7 +226,6 @@ void LoadFlow::DpDer() {
 
         // dPk em relação a 'ak '.
         // -V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm)) + Jac(k-1, k-1);
-        cout << -barK->GetVoltage() * barM->GetVoltage() << "-220" << endl;
         jacobian(k, k) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta)) + jacobian(k, k);
 
         // dPk em relação a 'am' (exceto quando m for a barra slack).
