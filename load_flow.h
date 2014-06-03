@@ -29,6 +29,7 @@ private:
 
   Graph * bars;
   double error;
+  double sBase;
   vector<point> points;
 
   void mismatches();
@@ -44,6 +45,7 @@ private:
 
 public:
   LoadFlow(double error);
+  LoadFlow(double error, double sBase);
   LoadFlow();
   ~LoadFlow();
 

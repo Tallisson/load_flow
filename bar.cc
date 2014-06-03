@@ -87,10 +87,46 @@ map<int, Bar*> Bar::GetNs() {
   return neighbors;
 }
 
-int Bar::GetBSh() {
+double Bar::GetBSh() {
   return bSh;
 }
 
 Node* Bar::GetEdge(int n) {
   return impd.at(n);
+}
+
+void Bar::SetAPowerG(double aPowerG) {
+  this->aPowerG = aPowerG;
+}
+
+void Bar::SetAPowerL(double aPowerL) {
+  this->aPowerL = aPowerL;
+}
+
+void Bar::SetRPowerG(double rPowerG) {
+  this->rPowerG = rPowerG;
+}
+
+void Bar::SetRPowerL(double rPowerL) {
+  this->rPowerG = rPowerL;
+}
+
+double Bar::GetAPowerG() {
+  return this->aPowerG;
+}
+
+double Bar::GetAPowerL() {
+  return this->aPowerL;
+}
+
+double Bar::GetRPowerG() {
+  return this->rPowerG;
+}
+
+double Bar::GetRPowerL() {
+  return this->rPowerL;
+}
+
+void Bar::SetBSh(double bSh) {
+  this->bSh = bSh;
 }

@@ -6,9 +6,16 @@ using namespace std;
 #define ANGLE_INIT 0
 #define VOLTAGE_INIT 1
 #define ERROR 0.0001
+#define S_BASE 100
 
 LoadFlow::LoadFlow(double error):
-    numB(0), nPV(0), nPQ(0), cont(0), error(error)
+    numB(0), nPV(0), nPQ(0), cont(0), error(error), sBase(S_BASE)
+{
+  bars = new Graph();
+}
+
+LoadFlow::LoadFlow(double error, double sBase):
+    numB(0), nPV(0), nPQ(0), cont(0), error(error), sBase(sBase)
 {
   bars = new Graph();
 }
@@ -24,6 +31,20 @@ LoadFlow::~LoadFlow() {
 }
 
 void LoadFlow::AddBar(Bar* bar) {
+  bar->SetAPower(bar->GetAPower() / sBase);
+  bar->SetRPower(bar->GetRPower() / sBase);
+
+  bar->SetAPowerG(bar->GetAPowerG() / sBase);
+  bar->SetAPowerL(bar->GetAPowerL() / sBase);
+  bar->SetRPowerG(bar->GetRPowerG() / sBase);
+  bar->SetRPowerL(bar->GetRPowerL() / sBase);
+  bar->SetBSh(bar->GetBSh() / sBase);
+
+
+  if(bar->GetId() == 1) {
+    cout << "Bar" << bar->GetId() << " (P, Q, Bsh): " << bar->GetAPower() << ", " << bar->GetRPower() << ", " << bar->GetBSh() << endl;
+  }
+
   if(bar->GetType() == GENERATION) {
     nPV++;
     ord.insert(pair<int, int>(bar->GetId(), cont++));
@@ -374,13 +395,14 @@ void LoadFlow::calcS2() {
 void LoadFlow::Execute() {
   int counter = 0;
   initialize();
+
   for(int i = 0; i < numB; i++) {
     Bar * tmp = bars->at(i+1);
     cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
   }
   mismatches();
   cout << "Erro: " << endl << diffP << endl;
-  while(true) {
+  while(counter < 3) {
     calcJ();
     cout << "Jac" << endl << jacobian << endl;
 

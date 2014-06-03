@@ -13,7 +13,11 @@ private:
   double angle;
   double voltage;
   double aPower;
+  double aPowerG;
+  double aPowerL;
   double rPower;
+  double rPowerG;
+  double rPowerL;
   int type;
   int id;
   double c;
@@ -27,33 +31,44 @@ private:
 
 public:
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :
-      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id), bSh(bSh)
-  {};
-  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double c, double s, double bSh) :
-      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), type(type), id(id), c(c), s(s), bSh(bSh)
+      angle(angle), voltage(voltage), aPower(aPower), aPowerG(0), aPowerL(0), rPower(rPower), rPowerG(0), rPowerL(0), type(type), id(id),
+      bSh(bSh)
   {};
 
-  Bar():
-    angle(0), voltage(0), aPower(0), rPower(0), type(0), id(0), c(0), s(0), bSh(0)
-  {};
+  Bar(double angle, double voltage, double aPowerG, double aPowerL, double rPowerG, double rPowerL, int type, int id, double bSh) :
+    angle(angle), voltage(voltage), aPowerG(aPowerG), aPowerL(aPowerL), rPowerG(rPowerG), rPowerL(rPowerL), type(type), id(id), c(0), s(0), bSh(bSh)
+  {
+    aPower = aPowerG - aPowerL;
+    rPower = rPowerG - rPowerL;
+  };
 
   double GetAngle();
   double GetVoltage();
   double GetAPower();
   double GetRPower();
+  double GetAPowerG();
+  double GetAPowerL();
+  double GetRPowerG();
+  double GetRPowerL();
   double GetC();
   double GetS();
+  double GetBSh();
 
   int GetType();
   int GetId();
-  int GetBSh();
+  //int GetBSh();
 
   void SetAngle(double angle);
   void SetVoltage(double voltage);
   void SetAPower(double aPower);
   void SetRPower(double rPower);
+  void SetAPowerG(double aPowerG);
+  void SetAPowerL(double aPowerL);
+  void SetRPowerG(double rPowerG);
+  void SetRPowerL(double rPowerL);
   void SetC(double c);
   void SetS(double s);
+  void SetBSh(double bSh);
   void AddN(Bar* n, Node* i);
   Node * HasN(int w);
   map<int, Bar*> GetNs();
