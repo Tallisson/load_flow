@@ -26,11 +26,14 @@ private:
   vec diffP;
   vec diffS;
   map<int, int> ord;
+  map<int, int> ordPQ;
 
   Graph * bars;
   double error;
   double sBase;
   vector<point> points;
+  double max_error;
+  bool use_base;
 
   void mismatches();
   void solveSys();
@@ -60,4 +63,5 @@ public:
   void SetSimetric(bool s);
   void DpDer();
   void DqDer();
+  void SetUseBase(bool use_base);
 };
