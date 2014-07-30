@@ -1,4 +1,4 @@
-#include "../load_flow.h"
+#include "../controller/load_flow.h"
 #include <vector>
 #include <iostream>
 #include <armadillo>
@@ -57,8 +57,8 @@ void exec5() {
   delete lf;
 }
 
-int main(int argc, char ** argv) {
+/*int main(int argc, char ** argv) {
   exec5();
 
   return 0;
-}
+}*/

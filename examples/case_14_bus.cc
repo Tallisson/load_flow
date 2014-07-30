@@ -1,4 +1,4 @@
-#include "../load_flow.h"
+#include "../controller/load_flow.h"
 #include <vector>
 #include <iostream>
 #include <armadillo>
