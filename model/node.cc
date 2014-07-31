@@ -23,3 +23,11 @@ void Node::SetS(double s) {
 bool Node::Exist() {
   return false;
 }
+
+void Node::SetTap(double t) {
+  this->tap = t;
+}
+
+double Node::GetTap() {
+  return tap;
+}

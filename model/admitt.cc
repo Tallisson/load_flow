@@ -12,6 +12,10 @@ void Admitt::SetSh(double sh) {
   this->sh = sh;
 }
 
+void Admitt::SetTap(double tap) {
+  this->tap  = tap;
+}
+
 double Admitt::GetR() {
   return r;
 }
@@ -22,4 +26,8 @@ double Admitt::GetX() {
 
 double Admitt::GetSh() {
   return sh;
+}
+
+double Admitt::GetTap() {
+  return tap;
 }
