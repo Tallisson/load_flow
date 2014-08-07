@@ -1,3 +1,5 @@
+#include "define.h"
+
 class Admitt {
 private:
   double r;
@@ -5,7 +7,7 @@ private:
   double sh;
   double tap;
   double angle_phi;
-  double type;
+  int type;
 
 public:
   Admitt(double r, double x, double sh): r(r), x(x), sh(sh), tap(1), angle_phi(0), type(TRANSMISSION_LINE) {};
@@ -18,10 +20,12 @@ public:
   void SetSh(double sh);
   void SetTap(double tap);
   void SetType(int type);
+  void SetAngle(double angle);
 
   double GetR();
   double GetX();
   double GetSh();
   double GetTap();
-  void GetType();
+  double GetAngle();
+  int GetType();
 };

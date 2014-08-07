@@ -1,7 +1,14 @@
 #include <armadillo>
 #include <iostream>
 #include <vector>
+#include <stdio.h>
 #include "../model/graph.h"
+
+/*#define TRANSMISSION_LINE 0
+#define FIXED_TAP 1
+#define VARIABLE_TAP_VC 2
+#define VARIABLE_TAP_MVAR 3
+#define VARIABLE_PHASE_ANGLE 4*/
 
 using namespace arma;
 using namespace std;
@@ -20,20 +27,34 @@ private:
   int nPV;
   int nPQ;
   int cont;
+
+  int nLT;
+  int nTAP_Fixed;
+  int nTap_VC;
+  int nTap_MVAR;
+  int nTAP_PHASE;
+
   mat jacobian;
+
   vec estP;
   vec estS;
   vec diffP;
   vec diffS;
+  vec loss;
+
   map<int, int> ord;
   map<int, int> ordPQ;
+  map<Node*, double> estCrtlVar;
 
   Graph * bars;
+
   double error;
   double sBase;
+
   vector<point> points;
   double max_error;
   bool use_base;
+  bool verbose;
 
   void mismatches();
   void solveSys();
@@ -45,6 +66,7 @@ private:
   void calcS2();
   void initialize();
   bool nextIterate();
+  void setControlVariables();
 
 public:
   LoadFlow(double error);
@@ -64,4 +86,5 @@ public:
   void DpDer();
   void DqDer();
   void SetUseBase(bool use_base);
+  void LossCalc();
 };

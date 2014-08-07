@@ -20,6 +20,10 @@ void Admitt::SetType(int type) {
   this->type = type;
 }
 
+void Admitt::SetAngle(double angle) {
+  this->angle_phi = angle;
+}
+
 double Admitt::GetR() {
   return r;
 }
@@ -34,4 +38,12 @@ double Admitt::GetSh() {
 
 int Admitt::GetType() {
   return type;
+}
+
+double Admitt::GetAngle() {
+  return angle_phi;
+}
+
+double Admitt::GetTap() {
+  return tap;
 }

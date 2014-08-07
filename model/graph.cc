@@ -86,7 +86,7 @@ Bar * Graph::at(int v) {
   return bV;
 }
 
-void Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
+Node * Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
   double r = admitt->GetR();
   double x = admitt->GetX();
   double sh = (admitt->GetSh() ? admitt->GetSh() : 0);
@@ -95,9 +95,11 @@ void Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
   double s = -x / (pow(r, 2) + pow(x, 2));
   /*cout << "G(" << v.GetId()+1 << w.GetId()+1 << ") = " << c << endl;
   cout << "b(" << v.GetId()+1 << w.GetId()+1 << ") = " << s << endl;*/
-  Node * node = new Node(c, s, sh);
+  Node * node = new Node(c, s, sh, admitt->GetTap(), admitt->GetAngle());
 
   AddEdge(v, w, node);
+
+  return node;
 }
 
 map<int, Bar*> Graph::GetBars() {

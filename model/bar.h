@@ -35,12 +35,24 @@ public:
       bSh(bSh)
   {};
 
+  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh, int description):
+      angle(angle), voltage(voltage), aPower(aPower), aPowerG(0), aPowerL(0), rPower(rPower), rPowerG(0), rPowerL(0), type(type), id(id),
+      bSh(bSh)
+  {};
+
   Bar(double angle, double voltage, double aPowerG, double aPowerL, double rPowerG, double rPowerL, int type, int id, double bSh) :
     angle(angle), voltage(voltage), aPowerG(aPowerG), aPowerL(aPowerL), rPowerG(rPowerG), rPowerL(rPowerL), type(type), id(id), c(0), s(0), bSh(bSh)
   {
     aPower = aPowerG - aPowerL;
     rPower = rPowerG - rPowerL;
   };
+
+  Bar(double angle, double voltage, double aPowerG, double aPowerL, double rPowerG, double rPowerL, int type, int id, double bSh, int description) :
+    angle(angle), voltage(voltage), aPowerG(aPowerG), aPowerL(aPowerL), rPowerG(rPowerG), rPowerL(rPowerL), type(type), id(id), c(0), s(0), bSh(bSh)
+  {
+    aPower = aPowerG - aPowerL;
+    rPower = rPowerG - rPowerL;
+  }
 
   ~Bar();
 

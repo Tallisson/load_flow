@@ -1,6 +1,4 @@
-#define LINE_TANSMISSION 100
-#define PHASE_T 200
-#define PHASE_SHIFTING_T 300
+#include "define.h"
 
 class Node{
 private:
@@ -9,34 +7,29 @@ private:
   double sh;
   double tap;
   int type;
-  double phase_shifting;
+  double angle_phi;
 
 public:
-  Node(double c, double s): c(c), s(s), sh(0), tap(1), type(LINE_TANSMISSION), phase_shifting(0)
+  Node(double c, double s): c(c), s(s), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0)
   {};
-  Node(double c, double s, double sh, double tap, double phase_shifting): c(c), s(s), sh(sh), tap(tap), phase_shifting(phase_shifting)
-  {
-    if(tap == 1 && phase_shifting == 0) {
-      type = LINE_TANSMISSION;
-    } else {
-      if(sh == 0 && phase_shifting == 0) {
-        type = PHASE_T;
-      } else {
-        if(sh == 0 && tap == 1) {
-          type = PHASE_SHIFTING_T;
-        }
-      }
-    }
-  };
-  Node(): c(0), s(0), sh(0), tap(1), type(LINE_TANSMISSION) {};
+  Node(double c, double s, double sh): c(c), s(s), sh(sh), tap(1), type(TRANSMISSION_LINE), angle_phi(0) {};
+  Node(double c, double s, double sh, double tap, double angle_phi): c(c), s(s), sh(sh), tap(tap), angle_phi(angle_phi)
+  {};
+  Node(): c(0), s(0), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0) {};
 
   double GetS();
   double GetC();
   double GetSh();
   double GetTap();
+  double GetPhi();
   int GetId();
+  int GetType();
+
   void SetS(double s);
   void SetC(double c);
+  void SetSh(double sh);
   void SetTap(double t);
+  void SetPhi(double angle);
+
   bool Exist();
 };

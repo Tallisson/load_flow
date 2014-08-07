@@ -23,7 +23,7 @@ public:
   Node * GetEdge(int v, int w);
   void SetSimetric(bool simetric);
   Bar * at(int v);
-  void AddEdge(Bar * v, Bar * w, Admitt * admitt);
+  Node * AddEdge(Bar * v, Bar * w, Admitt * admitt);
   map<int, Bar*> GetBars();
   int GetSize();
 };
