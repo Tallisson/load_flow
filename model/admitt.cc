@@ -16,6 +16,10 @@ void Admitt::SetTap(double tap) {
   this->tap  = tap;
 }
 
+void Admitt::SetType(int type) {
+  this->type = type;
+}
+
 double Admitt::GetR() {
   return r;
 }
@@ -28,6 +32,6 @@ double Admitt::GetSh() {
   return sh;
 }
 
-double Admitt::GetTap() {
-  return tap;
+int Admitt::GetType() {
+  return type;
 }
