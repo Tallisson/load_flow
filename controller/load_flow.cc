@@ -9,20 +9,20 @@ using namespace std;
 
 LoadFlow::LoadFlow(double error):
     numB(0), nPV(0), nPQ(0), cont(0), nLT(0), nTAP_Fixed(0), nTap_VC(0), nTap_MVAR(0), nTAP_PHASE(0),
-    error(error), sBase(S_BASE), use_base(true), verbose(true)
+    error(error), sBase(S_BASE), use_base(true), verbose(true), s_alpha(1)
 {
   bars = new Graph();
 }
 
 LoadFlow::LoadFlow(double error, double sBase):
-    numB(0), nPV(0), nPQ(0), cont(0), error(error), sBase(sBase), use_base(true), verbose(true)
+    numB(0), nPV(0), nPQ(0), cont(0), error(error), sBase(sBase), use_base(true), verbose(true), s_alpha(1)
 {
   bars = new Graph();
 }
 
 LoadFlow::LoadFlow():
     numB(0), nPV(0), nPQ(0), cont(0), nLT(0), nTAP_Fixed(0), nTap_VC(0), nTap_MVAR(0), nTAP_PHASE(0),
-    error(ERROR), use_base(true)
+    error(ERROR), use_base(true), s_alpha(1)
 {
   bars = new Graph();
 }
@@ -488,34 +488,35 @@ int LoadFlow::Execute() {
     updateState();
     counter++;
     mismatches();
-
+    setControlVariables();
     if(verbose == true) {
-      //cout << "Jac" << endl << jacobian << endl;
+      cout << "Jac" << endl << jacobian << endl;
 
-      //cout << "dx" << endl << diffS << endl;
+      cout << "dx" << endl << diffS << endl;
 
-      /*for(int i = 0; i < numB; i++) {
+      for(int i = 0; i < numB; i++) {
         Bar * tmp = bars->at(i+1);
         cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
-      }*/
+      }
 
-      //cout << "Erro: " << endl << diffP << endl;
+      cout << "Erro: " << endl << diffP << endl;
     }
 
     if(nextIterate() == false) {
       break;
     }
   }
+
   calcS2();
   if(verbose == true) {
-    //cout << "O processo convergiu com " << counter << " iterações\n" << endl;
+    cout << "O processo convergiu com " << counter << " iterações\n" << endl;
 
-    /*for(int i = 0; i < numB; i++) {
+    for(int i = 0; i < numB; i++) {
       Bar * b = bars->at(i+1);
 
       //cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
       printf("Barra(%d)=> Angulo: %.5f, Voltagem: %.5f, Potência Ativa: %.4f, Potência Reativa: %.4f\n", b->GetId(), b->GetAngle(), b->GetVoltage(), b->GetAPower(), b->GetRPower());
-    }*/
+    }
   }
 
   return counter;
@@ -530,9 +531,171 @@ void LoadFlow::SetUseBase(bool use_base) {
  * 1) Controle de magnitude de tensão nodal (local e remota) por injeção de reativos
  * 2) Controle de magnitude de tensão nodal (local e remota) por ajuste de tap (transformadores em-fase)
  * 3) Controle de fluxo de potência (transformadores defasadores)
+ *
+ * Ajuste alternado:
+ * correção na variavel de controle = diferença entre valores calculados e especificados da variável controlada * sensibilidade
  */
 void LoadFlow::setControlVariables() {
-  // deltaU = alfa * deltaZ
-  // deltaZ = z_esp - z_cal
+  for( std::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
+    Node * edge = it->first;
+    Bar* crt_bar = bars->at(edge->GetBar());
 
+    // deltaU = alfa * deltaZ
+    // deltaZ = z_esp - z_cal
+    switch(edge->GetType()) {
+    case FIXED_TAP:
+
+    case VARIABLE_TAP_VC:
+    {
+      double old_tap = it->second;
+      double delta_z = crt_bar->GetEst(VOLTAGE) - crt_bar->GetVoltage();
+
+      if(delta_z > error) {
+        double new_tap = old_tap + s_alpha * (delta_z);
+
+        double limit = edge->GetLim(MAX_TAP);
+        if(new_tap > limit) {
+          new_tap = limit;
+        } else {
+          limit = edge->GetLim(MIN_TAP);
+          if(new_tap < limit) {
+            new_tap = limit;
+          }
+        }
+
+        it->second = new_tap;
+      }
+      break;
+    }
+    case VARIABLE_TAP_MVAR:
+    {
+      double old_tap = it->second;
+      double delta_z = crt_bar->GetEst(R_POWER) - crt_bar->GetRPower();
+      if(delta_z > error) {
+        double new_tap = old_tap + s_alpha * (delta_z);
+
+        double limit = edge->GetLim(MAX_TAP);
+        if(new_tap > limit) {
+          new_tap = limit;
+        } else {
+          limit = edge->GetLim(MIN_TAP);
+          if(new_tap < limit) {
+            new_tap = limit;
+          }
+        }
+
+        it->second = new_tap;
+      }
+      break;
+    }
+    case VARIABLE_PHASE_ANGLE:
+    {
+      double old_angle = it->second;
+      double delta_z = crt_bar->GetEst(A_POWER) - crt_bar->GetAPower();
+
+      if(delta_z > error) {
+        double new_angle = old_angle + s_alpha * (delta_z);
+        if(edge->GetLim(MAX_PHI) != edge->GetLim(MIN_PHI)) {
+          double limit = edge->GetLim(MAX_PHI);
+          if(new_angle > limit) {
+            new_angle = limit;
+          } else {
+            limit = edge->GetLim(MIN_PHI);
+            if(new_angle < limit) {
+              new_angle = limit;
+            }
+          }
+        }
+
+        it->second = new_angle;
+      }
+      break;
+    }
+    default:
+      break;
+    }
+  }
+}
+
+int main(int argc, char ** argv) {
+  LoadFlow * lf = new LoadFlow(0.0001);
+
+  Bar * b1 = new Bar(0, 1.060, 232.40, 0.0, -16.90, 0, SLACK, 1, 0);
+  Bar * b2 = new Bar(0, 1.045,  40.00, 21.7, 42.4, 12.7, GENERATION, 2, 0);
+  Bar * b3 = new Bar(0, 1.010, 0, 94.2, 23.4, 19.0, GENERATION, 3, 0);
+  Bar * b4 = new Bar(0,     0, 0, 47.8, 0, -3.9, LOAD, 4, 0);
+  Bar * b5 = new Bar(0,     0, 0, 7.6, 0, 1.6, LOAD, 5, 0);
+  Bar * b6 = new Bar(0, 1.070, 0, 11.2, 12.2, 7.5, GENERATION, 6, 0);
+  Bar * b7 = new Bar(0,     0, 0, 0, 0, 0, LOAD, 7, 0);
+  Bar * b8 = new Bar(0, 1.090, 0, 0, 17.4, 0, GENERATION, 8, 0);
+  Bar * b9 = new Bar(0,     0, 0, 29.5, 0, 16.6, LOAD, 9, 0.19);
+  Bar * b10 = new Bar(0,    0, 0, 9, 0, 5.8, LOAD, 10, 0);
+  Bar * b11 = new Bar(0,    0, 0, 3.5, 0, 1.8, LOAD, 11, 0);
+  Bar * b12 = new Bar(0,    0, 0, 6.1, 0, 1.6, LOAD, 12, 0);
+  Bar * b13 = new Bar(0,    0, 0, 13.5, 0, 5.8, LOAD, 13, 0);
+  Bar * b14 = new Bar(0,    0, 0, 14.9, 0, 5.0, LOAD, 14, 0);
+
+  lf->AddBar(b1);
+  lf->AddBar(b2);
+  lf->AddBar(b3);
+  lf->AddBar(b4);
+  lf->AddBar(b5);
+  lf->AddBar(b6);
+  lf->AddBar(b7);
+  lf->AddBar(b8);
+  lf->AddBar(b9);
+  lf->AddBar(b10);
+  lf->AddBar(b11);
+  lf->AddBar(b12);
+  lf->AddBar(b13);
+  lf->AddBar(b14);
+
+  //rkm    = [0.01938  0.05403  0.04699  0.05811  0.05695  0.06701  0.01335   0.0      0.0      0.0     0.09498   0.12291  0.06615  0.0     0.0      0.03181  0.12711  0.08205  0.22092  0.17093];
+  //xkm    = [0.05917  0.22304  0.19797  0.17632  0.17388  0.17103  0.04211  0.20912  0.55618  0.25202  0.19890  0.25581  0.13027  0.17615  0.11001  0.08450  0.27038  0.19207  0.19988  0.34802]';
+  //bkm_sh = [0.0528   0.0492   0.0438   0.0340   0.0346   0.0128   0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0      0.0]'/2;
+
+  Admitt * a1 = new Admitt(0.01938, 0.05917, 0.0528/2);
+  Admitt * a2 = new Admitt(0.05403, 0.22304, 0.0492/2);
+  Admitt * a3 = new Admitt(0.04699, 0.19797, 0.0438/2);
+  Admitt * a4 = new Admitt(0.05811, 0.17632, 0.0340/2);
+  Admitt * a5 = new Admitt(0.05695, 0.17388, 0.0346/2);
+  Admitt * a6 = new Admitt(0.06701, 0.17103, 0.0128/2);
+  Admitt * a7 = new Admitt(0.01335, 0.04211, 0);
+  Admitt * a8 = new Admitt(0, 0.20912, 0);
+  Admitt * a9 = new Admitt(0, 0.55618, 0);
+  Admitt * a10 = new Admitt(0, 0.25202, 0);
+  Admitt * a11 = new Admitt(0.09498, 0.19890, 0);
+  Admitt * a12 = new Admitt(0.12291, 0.25581, 0);
+  Admitt * a13 = new Admitt(0.06615, 0.13027, 0);
+  Admitt * a14 = new Admitt(0, 0.17615, 0);
+  Admitt * a15 = new Admitt(0, 0.11001, 0);
+  Admitt * a16 = new Admitt(0.03181, 0.08450, 0);
+  Admitt * a17 = new Admitt(0.12711, 0.27038, 0);
+  Admitt * a18 = new Admitt(0.08205, 0.19207, 0);
+  Admitt * a19 = new Admitt(0.22092, 0.19988, 0);
+  Admitt * a20 = new Admitt(0.17093, 0.34802, 0);
+
+  lf->AssocBars(b1, b2, a1);
+  lf->AssocBars(b1, b5, a2);
+  lf->AssocBars(b2, b3, a3);
+  lf->AssocBars(b2, b4, a4);
+  lf->AssocBars(b2, b5, a5);
+  lf->AssocBars(b3, b4, a6);
+  lf->AssocBars(b4, b5, a7);
+  lf->AssocBars(b4, b7, a8);
+  lf->AssocBars(b4, b9, a9);
+  lf->AssocBars(b5, b6, a10);
+  lf->AssocBars(b6, b11, a11);
+  lf->AssocBars(b6, b12, a12);
+  lf->AssocBars(b6, b13, a13);
+  lf->AssocBars(b7, b8, a14);
+  lf->AssocBars(b7, b9, a15);
+  lf->AssocBars(b9, b10, a16);
+  lf->AssocBars(b9, b14, a17);
+  lf->AssocBars(b10, b11, a18);
+  lf->AssocBars(b12, b13, a19);
+  lf->AssocBars(b13, b14, a20);
+
+  lf->Execute();
+  delete lf;
 }

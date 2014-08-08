@@ -116,6 +116,22 @@ void Bar::SetRPowerL(double rPowerL) {
   this->rPowerG = rPowerL;
 }
 
+void Bar::SetEst(int variable, double value) {
+  switch(variable) {
+  case VOLTAGE:
+    this->calcV = value;
+    break;
+  case A_POWER:
+    this->calcP = value;
+    break;
+  case R_POWER:
+    this->calcQ = value;
+    break;
+  default:
+    break;
+  }
+}
+
 double Bar::GetAPowerG() {
   return this->aPowerG;
 }
@@ -130,6 +146,24 @@ double Bar::GetRPowerG() {
 
 double Bar::GetRPowerL() {
   return this->rPowerL;
+}
+
+double Bar::GetEst(int variable) {
+  switch(variable) {
+  case VOLTAGE:
+    return this->calcV;
+    break;
+  case A_POWER:
+    return this->calcP;
+    break;
+  case R_POWER:
+    return this->calcQ;
+    break;
+  default:
+    break;
+  }
+
+  return 0;
 }
 
 void Bar::SetBSh(double bSh) {

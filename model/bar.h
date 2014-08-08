@@ -1,10 +1,15 @@
 //#include <vector>
 #include <map>
 #include "node.h"
+#include <string>
 
 #define SLACK 3
 #define LOAD 2
 #define GENERATION 1
+
+#define VOLTAGE 100
+#define A_POWER 200
+#define R_POWER 300
 
 using namespace std;
 
@@ -23,6 +28,10 @@ private:
   double c;
   double s;
   double bSh;
+
+  double calcV;
+  double calcQ;
+  double calcP;
 
   map<int, Bar*> neighbors;
   map<int, Node*> impd;
@@ -67,6 +76,7 @@ public:
   double GetC();
   double GetS();
   double GetBSh();
+  double GetEst(int variable);
 
   int GetType();
   int GetId();
@@ -83,6 +93,8 @@ public:
   void SetC(double c);
   void SetS(double s);
   void SetBSh(double bSh);
+  void SetEst(int variable, double value);
+
   void AddN(Bar* n, Node* i);
   Node * HasN(int w);
   map<int, Bar*> GetNs();

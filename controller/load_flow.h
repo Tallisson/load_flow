@@ -55,6 +55,7 @@ private:
   double max_error;
   bool use_base;
   bool verbose;
+  double s_alpha;
 
   void mismatches();
   void solveSys();
