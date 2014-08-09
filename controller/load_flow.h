@@ -1,25 +1,10 @@
 #include <armadillo>
 #include <iostream>
-#include <vector>
 #include <stdio.h>
 #include "../model/graph.h"
 
-/*#define TRANSMISSION_LINE 0
-#define FIXED_TAP 1
-#define VARIABLE_TAP_VC 2
-#define VARIABLE_TAP_MVAR 3
-#define VARIABLE_PHASE_ANGLE 4*/
-
 using namespace arma;
 using namespace std;
-
-typedef struct point {
- int row;
- int col;
-
- point(int row, int col): row(row), col(col) {
- };
-} point;
 
 class LoadFlow {
 private:
@@ -51,7 +36,6 @@ private:
   double error;
   double sBase;
 
-  vector<point> points;
   double max_error;
   bool use_base;
   bool verbose;
