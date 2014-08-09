@@ -15,7 +15,7 @@ numV(0), numE(0), simetric(true)
 
 Graph::~Graph() {
   Bar * b;
-  for(std::map<int, Bar*>::iterator it = bars.begin(); it != bars.end(); it++) {
+  for(container::map<int, Bar*>::iterator it = bars.begin(); it != bars.end(); it++) {
     b = it->second;
     b->Clear();
   }
@@ -102,7 +102,7 @@ Node * Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
   return node;
 }
 
-map<int, Bar*> Graph::GetBars() {
+container::map<int, Bar*> Graph::GetBars() {
   return bars;
 }
 

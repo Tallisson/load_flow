@@ -1,8 +1,10 @@
-#include <map>
+//#include <map>
+#include <boost/container/map.hpp>
 #include "bar.h"
 #include "admitt.h"
 
-using namespace std;
+//using namespace std;
+using namespace boost;
 
 class Graph {
 private:
@@ -10,7 +12,7 @@ private:
   int numE;
   bool simetric;
   void Assoc(Bar * v, Bar * w, Node * impd);
-  map<int, Bar*> bars;
+  container::map<int, Bar*> bars;
 
 public:
   Graph(int numV);
@@ -24,6 +26,6 @@ public:
   void SetSimetric(bool simetric);
   Bar * at(int v);
   Node * AddEdge(Bar * v, Bar * w, Admitt * admitt);
-  map<int, Bar*> GetBars();
+  container::map<int, Bar*> GetBars();
   int GetSize();
 };

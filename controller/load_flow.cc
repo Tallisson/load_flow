@@ -130,9 +130,9 @@ void LoadFlow::SetSimetric(bool s) {
 
 void LoadFlow::initState() {
   Bar * bar;
-  map<int, Bar*> nodes = bars->GetBars();
+  container::map<int, Bar*> nodes = bars->GetBars();
 
-  for (std::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
+  for (container::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
     bar = it->second;
 
     if(bar->GetType() != SLACK) {
@@ -147,9 +147,9 @@ void LoadFlow::initState() {
 
 void LoadFlow::initState(double aInitial, double vInitial) {
   Bar * bar;
-  map<int, Bar*> nodes = bars->GetBars();
+  container::map<int, Bar*> nodes = bars->GetBars();
 
-  for (std::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
+  for (container::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
     bar = it->second;
 
     if(bar->GetType() != SLACK) {
@@ -199,21 +199,6 @@ void LoadFlow::updateState() {
 }
 
 bool LoadFlow::nextIterate() {
-  /*int i = 0;
-
-  int s = nPQ + nPV;
-  for(int k = 0; k < s; k++) {
-    if( error < abs(diffP(k)) ) {
-      return true;
-    }
-
-    i = k + nPQ;
-    if( error < abs(diffP(i)) ) {
-      return true;
-    }
-  }
-
-  return false;*/
   vec t = abs(diffP);
   max_error = max(t);
   return  max_error > error;
@@ -221,7 +206,7 @@ bool LoadFlow::nextIterate() {
 
 void LoadFlow::mismatches() {
   double theta;
-  map<int, Bar*> nodes = bars->GetBars();
+  container::map<int, Bar*> nodes = bars->GetBars();
 
   std::map<int, int>::iterator it=ord.begin();
   for(int k = 0; it != ord.end(); k++) {
@@ -427,9 +412,9 @@ void LoadFlow::calcJ() {
 
 void LoadFlow::calcS2() {
   Bar * barK, * barM;
-  map<int, Bar*> nodes = bars->GetBars();
+  container::map<int, Bar*> nodes = bars->GetBars();
 
-  for(std::map<int, Bar*>::iterator it = nodes.begin(); it != nodes.end(); it++) {
+  for(container::map<int, Bar*>::iterator it = nodes.begin(); it != nodes.end(); it++) {
     barK = it->second;
 
     if(barK->GetType() == SLACK) {
@@ -474,12 +459,12 @@ int LoadFlow::Execute() {
   mismatches();
 
   if(verbose == true) {
-    /*for(int i = 0; i < numB; i++) {
+    for(int i = 0; i < numB; i++) {
       Bar * tmp = bars->at(i+1);
       cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
-    }*/
+    }
 
-    //cout << "Erro: " << endl << diffP << endl;
+    cout << "Erro: " << endl << diffP << endl;
   }
 
   while(true) {
