@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "../model/graph.h"
 #include "../model/report.h"
+#include "../model/define.h"
 
 using namespace arma;
 using namespace std;
@@ -77,8 +78,7 @@ public:
   void DpDer();
   void DqDer();
   void SetUseBase(bool use_base);
-  void CalcPower();
-  void LossCalc();
+  void CalcReport();
 };
 
 #endif /* LOAD_FLOW_H_ */

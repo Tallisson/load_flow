@@ -14,6 +14,9 @@ void Loss::SetAttr(int attr, double value) {
   case Q_IN:
     this->q_in_branch= value;
     break;
+  case LOSS:
+    this->loss = value;
+    break;
   }
 }
 
@@ -24,6 +27,9 @@ double Loss::GetAttr(int attr) {
     break;
   case Q_IN:
     return this->q_in_branch;
+    break;
+  case LOSS:
+    return this->loss;
     break;
   }
 
