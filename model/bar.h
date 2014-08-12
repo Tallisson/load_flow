@@ -1,7 +1,11 @@
-//#include <vector>
-#include <map>
+#ifndef BAR_H_
+#define BAR_H_
+
+#include <boost/container/map.hpp>
 #include "node.h"
 #include <string>
+
+using namespace boost;
 
 #define SLACK 3
 #define LOAD 2
@@ -18,11 +22,11 @@ private:
   double angle;
   double voltage;
   double aPower;
-  double aPowerG;
-  double aPowerL;
   double rPower;
-  double rPowerG;
+  double aPowerL;
   double rPowerL;
+  double aPowerG;
+  double rPowerG;
   int type;
   int id;
   double c;
@@ -33,35 +37,21 @@ private:
   double calcQ;
   double calcP;
 
-  map<int, Bar*> neighbors;
-  map<int, Node*> impd;
-  /*vector<Bar> neighbors;
-  vector<Node> impd;*/
+  container::map<int, Bar*> neighbors;
+  container::map<int, Node*> impd;
 
 public:
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :
-      angle(angle), voltage(voltage), aPower(aPower), aPowerG(0), aPowerL(0), rPower(rPower), rPowerG(0), rPowerL(0), type(type), id(id),
+      angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), aPowerL(0), rPowerL(0), aPowerG(0), rPowerG(0), type(type), id(id),
       bSh(bSh)
   {};
 
-  Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh, int description):
-      angle(angle), voltage(voltage), aPower(aPower), aPowerG(0), aPowerL(0), rPower(rPower), rPowerG(0), rPowerL(0), type(type), id(id),
-      bSh(bSh)
-  {};
-
-  Bar(double angle, double voltage, double aPowerG, double aPowerL, double rPowerG, double rPowerL, int type, int id, double bSh) :
-    angle(angle), voltage(voltage), aPowerG(aPowerG), aPowerL(aPowerL), rPowerG(rPowerG), rPowerL(rPowerL), type(type), id(id), c(0), s(0), bSh(bSh)
+  Bar(double angle, double voltage, double aPowerL, double rPowerL, double aPowerG, double rPowerG, int type, int id, double bSh) :
+    angle(angle), voltage(voltage), aPowerL(aPowerL), rPowerL(rPowerL), aPowerG(aPowerG), rPowerG(rPowerG), type(type), id(id), c(0), s(0), bSh(bSh)
   {
     aPower = aPowerG - aPowerL;
     rPower = rPowerG - rPowerL;
   };
-
-  Bar(double angle, double voltage, double aPowerG, double aPowerL, double rPowerG, double rPowerL, int type, int id, double bSh, int description) :
-    angle(angle), voltage(voltage), aPowerG(aPowerG), aPowerL(aPowerL), rPowerG(rPowerG), rPowerL(rPowerL), type(type), id(id), c(0), s(0), bSh(bSh)
-  {
-    aPower = aPowerG - aPowerL;
-    rPower = rPowerG - rPowerL;
-  }
 
   ~Bar();
 
@@ -97,8 +87,10 @@ public:
 
   void AddN(Bar* n, Node* i);
   Node * HasN(int w);
-  map<int, Bar*> GetNs();
-  map<int, Node*> GetWeight();
+  container::map<int, Bar*> GetNs();
+  container::map<int, Node*> GetWeight();
   Node * GetEdge(int n);
   void Clear();
 };
+
+#endif /* BAR_H_ */

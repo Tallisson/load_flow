@@ -84,11 +84,11 @@ void Bar::SetC(double c) {
   this->c = c;
 }
 
-map<int, Node*> Bar::GetWeight() {
+container::map<int, Node*> Bar::GetWeight() {
   return impd;
 }
 
-map<int, Bar*> Bar::GetNs() {
+container::map<int, Bar*> Bar::GetNs() {
   return neighbors;
 }
 

@@ -1,10 +1,15 @@
+#ifndef LOAD_FLOW_H_
+#define LOAD_FLOW_H_
+
 #include <armadillo>
 #include <iostream>
 #include <stdio.h>
 #include "../model/graph.h"
+#include "../model/report.h"
 
 using namespace arma;
 using namespace std;
+using namespace boost;
 
 class LoadFlow {
 private:
@@ -25,11 +30,10 @@ private:
   vec estS;
   vec diffP;
   vec diffS;
-  vec loss;
 
-  map<int, int> ord;
-  map<int, int> ordPQ;
-  map<Node*, double> estCrtlVar;
+  container::map<int, int> ord;
+  container::map<int, int> ordPQ;
+  container::map<Node*, double> estCrtlVar;
 
   Graph * bars;
 
@@ -40,6 +44,8 @@ private:
   bool use_base;
   bool verbose;
   double s_alpha;
+
+  Report * report;
 
   void mismatches();
   void solveSys();
@@ -71,5 +77,8 @@ public:
   void DpDer();
   void DqDer();
   void SetUseBase(bool use_base);
+  void CalcPower();
   void LossCalc();
 };
+
+#endif /* LOAD_FLOW_H_ */

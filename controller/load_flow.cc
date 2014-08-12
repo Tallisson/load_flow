@@ -12,6 +12,7 @@ LoadFlow::LoadFlow(double error):
     error(error), sBase(S_BASE), use_base(true), verbose(true), s_alpha(1)
 {
   bars = new Graph();
+  report = new Report();
 }
 
 LoadFlow::LoadFlow(double error, double sBase):
@@ -29,6 +30,7 @@ LoadFlow::LoadFlow():
 
 LoadFlow::~LoadFlow() {
   delete bars;
+  delete report;
 }
 
 void LoadFlow::AddBar(Bar* bar) {
@@ -37,13 +39,18 @@ void LoadFlow::AddBar(Bar* bar) {
     bar->SetRPower(bar->GetRPower() / sBase);
 
     bar->SetAPowerG(bar->GetAPowerG() / sBase);
-    bar->SetAPowerL(bar->GetAPowerL() / sBase);
     bar->SetRPowerG(bar->GetRPowerG() / sBase);
+    if(bar->GetId() == 1) {
+      cout << "Testando: " << bar->GetRPowerG() << endl;
+    }
+    bar->SetAPowerL(bar->GetAPowerL() / sBase);
     bar->SetRPowerL(bar->GetRPowerL() / sBase);
     bar->SetBSh(bar->GetBSh() / sBase);
   }
 
-  //cout << "Bar" << bar->GetId() << " (P, Q, Bsh): " << bar->GetAPower() << ", " << bar->GetRPower() << ", " << bar->GetBSh() << endl;
+  if(verbose) {
+    cout << "Bar " << bar->GetId() << ": (P, Q, Bsh): " << bar->GetAPowerG() << ", " << bar->GetRPowerG() << ", " << bar->GetBSh() << endl;
+  }
 
   if(bar->GetType() == GENERATION) {
     nPV++;
@@ -182,7 +189,7 @@ void LoadFlow::initJ() {
 void LoadFlow::updateState() {
   Bar * barK;
 
-  std::map<int, int>::iterator it=ord.begin();
+  container::map<int, int>::iterator it=ord.begin();
   for(int k = 0; it != ord.end(); k++) {
     barK = bars->at(it->first);
 
@@ -208,7 +215,7 @@ void LoadFlow::mismatches() {
   double theta;
   container::map<int, Bar*> nodes = bars->GetBars();
 
-  std::map<int, int>::iterator it=ord.begin();
+  container::map<int, int>::iterator it=ord.begin();
   for(int k = 0; it != ord.end(); k++) {
     Bar * barK = bars->at(it->first);
     Bar * barM;
@@ -216,11 +223,11 @@ void LoadFlow::mismatches() {
     if(barK->GetType() != SLACK) {
       double vK = barK->GetVoltage();
       estP(k) = barK->GetC() * pow(vK, 2);
-      map<int, Node*> neighbors = barK->GetWeight();
+      container::map<int, Node*> neighbors = barK->GetWeight();
 
       Node* edge;
       int m;
-      for (std::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
+      for (container::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
         m = it->first;
         barM = bars->at(m);
         edge = it->second;
@@ -252,11 +259,11 @@ void LoadFlow::mismatches() {
       int i = ordPQ.at(barK->GetId()) + (nPQ + nPV);
       double vK = barK->GetVoltage();
       estP(i) = -pow(vK, 2) * barK->GetS();
-      map<int, Node*> neighbors = barK->GetWeight();
+      container::map<int, Node*> neighbors = barK->GetWeight();
 
       Node* edge;
       int m;
-      for (std::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
+      for (container::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
         m = it->first;
         barM = bars->at(m);
         edge = it->second;
@@ -268,7 +275,7 @@ void LoadFlow::mismatches() {
         case VARIABLE_TAP_VC:
           // No lugar de Vk aparece (1/tap * vK)
           estP(i) *= pow(1/edge->GetTap(), 2);
-          vK *= 1/ (edge->GetType());
+          vK *= 1 / (edge->GetTap());
           break;
         case VARIABLE_PHASE_ANGLE:
           // No lugar de theta aparece (theta + phi)
@@ -299,15 +306,15 @@ void LoadFlow::solveSys() {
 void LoadFlow::DpDer() {
   Bar * barK, * barM;
 
-  std::map<int, int>::iterator it=ord.begin();
+  container::map<int, int>::iterator it=ord.begin();
   int noSlack = nPQ + nPV;
   for(int k = 0; k < noSlack; k++) {
     barK = bars->at(it->first);
     int m = 0;
 
     if(barK->GetType() != SLACK) {
-      map<int, Bar*> neighbors = barK->GetNs();
-      for(std::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
+      container::map<int, Bar*> neighbors = barK->GetNs();
+      for(container::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
         barM = itN->second;
         double theta = barK->GetAngle() - barM->GetAngle();
         Node * edge = barK->GetEdge(barM->GetId());
@@ -348,7 +355,7 @@ void LoadFlow::DpDer() {
 void LoadFlow::DqDer() {
   Bar * barK, * barM;
 
-  std::map<int, int>::iterator it=ordPQ.begin();
+  container::map<int, int>::iterator it=ordPQ.begin();
   int s = nPV+ (nPQ << 1);
   int noSlack = nPQ + nPV;
   for(int k = nPQ + nPV; k < s; ) {
@@ -356,10 +363,10 @@ void LoadFlow::DqDer() {
     int m = 0;
 
     if(barK->GetType() == LOAD) {
-      map<int, Bar*> neighbors = barK->GetNs();
+      container::map<int, Bar*> neighbors = barK->GetNs();
       //std::map<int, int>::iterator it = ord.find(barK->GetId());
 
-      for(std::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
+      for(container::map<int, Bar*>::iterator itN=neighbors.begin(); itN!=neighbors.end(); ++itN) {
         barM = itN->second;
         double theta = barK->GetAngle() - barM->GetAngle();
         Node * edge = barK->GetEdge(barM->GetId());
@@ -419,9 +426,9 @@ void LoadFlow::calcS2() {
 
     if(barK->GetType() == SLACK) {
       double sum = 0;
-      map<int, Bar*> neighbors = barK->GetNs();
+      container::map<int, Bar*> neighbors = barK->GetNs();
 
-      for(std::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+      for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
         double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
@@ -436,9 +443,9 @@ void LoadFlow::calcS2() {
 
     if(barK->GetType() != LOAD) {
       double sum = 0;
-      map<int, Bar*> neighbors = barK->GetNs();
+      container::map<int, Bar*> neighbors = barK->GetNs();
 
-      for(std::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+      for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
         double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
@@ -474,6 +481,7 @@ int LoadFlow::Execute() {
     counter++;
     mismatches();
     setControlVariables();
+
     if(verbose == true) {
       cout << "Jac" << endl << jacobian << endl;
 
@@ -504,6 +512,20 @@ int LoadFlow::Execute() {
     }
   }
 
+  CalcPower();
+  if(verbose == true) {
+    container::map<Bar*, Quantity*> data = report->GetPower();
+    cout << endl << "Grandezas Calculdas: " << endl;
+
+    for(container::map<Bar*, Quantity*>::iterator it = data.begin(); it != data.end(); it++) {
+      Bar* barK = it->first;
+      Quantity* qt = it->second;
+
+      cout << "Barra " << barK->GetId() << ": { PG [p.u.] = " << qt->GetAttr(PG) << ", QG [p.u.] = " << qt->GetAttr(QG)
+           << ", PC [p.u.] = " << qt->GetAttr(PC) <<  ", QC [p.u.] = " << qt->GetAttr(QC) << " }" << endl;
+    }
+  }
+
   return counter;
 }
 
@@ -521,7 +543,7 @@ void LoadFlow::SetUseBase(bool use_base) {
  * correção na variavel de controle = diferença entre valores calculados e especificados da variável controlada * sensibilidade
  */
 void LoadFlow::setControlVariables() {
-  for( std::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
+  for( container::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
     Node * edge = it->first;
     Bar* crt_bar = bars->at(edge->GetBar());
 
@@ -580,15 +602,14 @@ void LoadFlow::setControlVariables() {
 
       if(delta_z > error) {
         double new_angle = old_angle + s_alpha * (delta_z);
-        if(edge->GetLim(MAX_PHI) != edge->GetLim(MIN_PHI)) {
-          double limit = edge->GetLim(MAX_PHI);
-          if(new_angle > limit) {
+
+        double limit = edge->GetLim(MAX_PHI);
+        if(new_angle > limit) {
+          new_angle = limit;
+        } else {
+          limit = edge->GetLim(MIN_PHI);
+          if(new_angle < limit) {
             new_angle = limit;
-          } else {
-            limit = edge->GetLim(MIN_PHI);
-            if(new_angle < limit) {
-              new_angle = limit;
-            }
           }
         }
 
@@ -602,23 +623,89 @@ void LoadFlow::setControlVariables() {
   }
 }
 
+void LoadFlow::CalcPower() {
+  Bar * barK, * barM;
+  container::map<int, Bar*> nodes = bars->GetBars();
+
+  for(container::map<int, Bar*>::iterator it = nodes.begin(); it != nodes.end(); it++) {
+    barK = it->second;
+
+    /*
+     * Para todas as barras do tipo slack (tipo 3):
+     * 1) Pg(k) = Pc(k)
+     * 2) Pg(k) = Pg(k) + G(km) * (V(k) ^ 2 - V(k) * V(m) *(G(km) * cos(theta) + Bkm * sen(theta)))     *
+     */
+    if(barK->GetType() == SLACK) {
+      double generate_power = barK->GetAPowerL();
+      Quantity * qt = new Quantity();
+      qt->SetAttr(PC, generate_power);
+      qt->SetAttr(QG, barK->GetRPowerG());
+      qt->SetAttr(QC, barK->GetRPowerL());
+
+      container::map<int, Bar*> neighbors = barK->GetNs();
+      for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node* edge = barK->GetEdge(barM->GetId());
+
+        // (gkm(km)*V(k)^2 - V(k)*V(m)*(gkm(km)*cos(akm)+bkm(km)*sin(akm)));
+        double vK = barK->GetVoltage();
+
+        generate_power += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
+      }
+      qt->SetAttr(PG, generate_power);
+
+      report->Insert(barK, qt);
+    }
+
+    /*
+     * Para todas as barras diferentes de LOAD:
+     * 1) Qg(k) = -Bsh(k) * V(k)^2 + Qc(k);
+     * 2) Qg(k) = Qg(k) + (-(bkm(km)+bkm_sh(km))*V(k)^2 + V(k)*V(m)*(bkm(km)*cos(akm)-gkm(km)*sin(akm)));
+     */
+    if(barK->GetType() != LOAD) {
+      double generate_power = barK->GetBSh() * pow(barK->GetVoltage(), 2) + barK->GetRPowerL();
+      Quantity * qt = new Quantity();
+      qt->SetAttr(PG, barK->GetAPowerG());
+      qt->SetAttr(PC, barK->GetAPowerL());
+      qt->SetAttr(QC, barK->GetRPowerL());
+
+      container::map<int, Bar*> neighbors = barK->GetNs();
+      for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
+        barM = itN->second;
+        double theta = barK->GetAngle() - barM->GetAngle();
+        Node* edge = barK->GetEdge(barM->GetId());
+
+        double vK = barK->GetVoltage();
+
+        generate_power += (-(edge->GetC() + edge->GetSh()) * pow(vK, 2) +
+                              vK * barM->GetVoltage() * (edge->GetC() * cos(theta) - edge->GetS() * sin(theta)));
+      }
+
+      qt->SetAttr(QG, generate_power);
+      report->Insert(barK, qt);
+    }
+
+  }
+}
+
 int main(int argc, char ** argv) {
   LoadFlow * lf = new LoadFlow(0.0001);
 
-  Bar * b1 = new Bar(0, 1.060, 232.40, 0.0, -16.90, 0, SLACK, 1, 0);
-  Bar * b2 = new Bar(0, 1.045,  40.00, 21.7, 42.4, 12.7, GENERATION, 2, 0);
-  Bar * b3 = new Bar(0, 1.010, 0, 94.2, 23.4, 19.0, GENERATION, 3, 0);
-  Bar * b4 = new Bar(0,     0, 0, 47.8, 0, -3.9, LOAD, 4, 0);
-  Bar * b5 = new Bar(0,     0, 0, 7.6, 0, 1.6, LOAD, 5, 0);
-  Bar * b6 = new Bar(0, 1.070, 0, 11.2, 12.2, 7.5, GENERATION, 6, 0);
+  Bar * b1 = new Bar(0, 1.060, 0.0, 0.0, 232.40, -16.90, SLACK, 1, 0);
+  Bar * b2 = new Bar(0, 1.045, 21.7, 12.7, 40.00, 42.4, GENERATION, 2, 0);
+  Bar * b3 = new Bar(0, 1.010, 94.2, 19.0, 0, 23.4, GENERATION, 3, 0);
+  Bar * b4 = new Bar(0,     0, 47.8, -3.9, 0, 0, LOAD, 4, 0);
+  Bar * b5 = new Bar(0,     0, 7.6, 1.6, 0, 0, LOAD, 5, 0);
+  Bar * b6 = new Bar(0, 1.070, 11.2, 7.5, 0, 12.2, GENERATION, 6, 0);
   Bar * b7 = new Bar(0,     0, 0, 0, 0, 0, LOAD, 7, 0);
-  Bar * b8 = new Bar(0, 1.090, 0, 0, 17.4, 0, GENERATION, 8, 0);
-  Bar * b9 = new Bar(0,     0, 0, 29.5, 0, 16.6, LOAD, 9, 0.19);
-  Bar * b10 = new Bar(0,    0, 0, 9, 0, 5.8, LOAD, 10, 0);
-  Bar * b11 = new Bar(0,    0, 0, 3.5, 0, 1.8, LOAD, 11, 0);
-  Bar * b12 = new Bar(0,    0, 0, 6.1, 0, 1.6, LOAD, 12, 0);
-  Bar * b13 = new Bar(0,    0, 0, 13.5, 0, 5.8, LOAD, 13, 0);
-  Bar * b14 = new Bar(0,    0, 0, 14.9, 0, 5.0, LOAD, 14, 0);
+  Bar * b8 = new Bar(0, 1.090, 0, 0, 0, 17.4, GENERATION, 8, 0);
+  Bar * b9 = new Bar(0,     0, 0, 0, 29.5, 16.6, LOAD, 9, 0.19);
+  Bar * b10 = new Bar(0,    0, 9, 5.8, 0, 0, LOAD, 10, 0);
+  Bar * b11 = new Bar(0,    0, 3.5, 1.8, 0, 0, LOAD, 11, 0);
+  Bar * b12 = new Bar(0,    0, 6.1, 1.6, 0, 0, LOAD, 12, 0);
+  Bar * b13 = new Bar(0,    0, 13.5, 5.8, 0, 0, LOAD, 13, 0);
+  Bar * b14 = new Bar(0,    0, 14.9, 5.0, 0, 0, LOAD, 14, 0);
 
   lf->AddBar(b1);
   lf->AddBar(b2);

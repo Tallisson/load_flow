@@ -1,3 +1,6 @@
+#ifndef ADMITT_H_
+#define ADMITT_H_
+
 #include "define.h"
 
 class Admitt {
@@ -29,3 +32,5 @@ public:
   double GetAngle();
   int GetType();
 };
+
+#endif /* ADMITT_H_ */

@@ -1,3 +1,6 @@
+#ifndef NODE_H_
+#define NODE_H_
+
 #include "define.h"
 
 #define MIN_TAP 100
@@ -57,3 +60,5 @@ public:
 
   bool Exist();
 };
+
+#endif /* NODE_H_ */
