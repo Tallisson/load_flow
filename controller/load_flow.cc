@@ -40,9 +40,6 @@ void LoadFlow::AddBar(Bar* bar) {
 
     bar->SetAPowerG(bar->GetAPowerG() / sBase);
     bar->SetRPowerG(bar->GetRPowerG() / sBase);
-    if(bar->GetId() == 1) {
-      cout << "Testando: " << bar->GetRPowerG() << endl;
-    }
     bar->SetAPowerL(bar->GetAPowerL() / sBase);
     bar->SetRPowerL(bar->GetRPowerL() / sBase);
     bar->SetBSh(bar->GetBSh() / sBase);
@@ -508,7 +505,7 @@ int LoadFlow::Execute() {
       Bar * b = bars->at(i+1);
 
       //cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
-      printf("Barra(%d)=> Angulo: %.5f, Voltagem: %.5f, Potência Ativa: %.4f, Potência Reativa: %.4f\n", b->GetId(), b->GetAngle(), b->GetVoltage(), b->GetAPower(), b->GetRPower());
+      printf("Barra(%d)=> Angulo: %.5f, Voltagem: %.5f\n", b->GetId(), b->GetAngle(), b->GetVoltage());
     }
   }
 
@@ -637,9 +634,10 @@ void LoadFlow::CalcPower() {
      */
     if(barK->GetType() == SLACK) {
       double generate_power = barK->GetAPowerL();
+      double reactive_power = -barK->GetBSh() * pow(barK->GetVoltage(), 2) + barK->GetRPowerL();
+
       Quantity * qt = new Quantity();
       qt->SetAttr(PC, generate_power);
-      qt->SetAttr(QG, barK->GetRPowerG());
       qt->SetAttr(QC, barK->GetRPowerL());
 
       container::map<int, Bar*> neighbors = barK->GetNs();
@@ -651,9 +649,13 @@ void LoadFlow::CalcPower() {
         // (gkm(km)*V(k)^2 - V(k)*V(m)*(gkm(km)*cos(akm)+bkm(km)*sin(akm)));
         double vK = barK->GetVoltage();
 
-        generate_power += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
+        generate_power += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() *
+                          (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
+        reactive_power += (-(edge->GetS() + edge->GetSh()) * pow(vK, 2) +
+                          vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
       }
       qt->SetAttr(PG, generate_power);
+      qt->SetAttr(QG, reactive_power);
 
       report->Insert(barK, qt);
     }
@@ -663,9 +665,10 @@ void LoadFlow::CalcPower() {
      * 1) Qg(k) = -Bsh(k) * V(k)^2 + Qc(k);
      * 2) Qg(k) = Qg(k) + (-(bkm(km)+bkm_sh(km))*V(k)^2 + V(k)*V(m)*(bkm(km)*cos(akm)-gkm(km)*sin(akm)));
      */
-    if(barK->GetType() != LOAD) {
-      double generate_power = barK->GetBSh() * pow(barK->GetVoltage(), 2) + barK->GetRPowerL();
+    if(barK->GetType() == GENERATION) {
+      double generate_power = -barK->GetBSh() * pow(barK->GetVoltage(), 2) + barK->GetRPowerL();
       Quantity * qt = new Quantity();
+
       qt->SetAttr(PG, barK->GetAPowerG());
       qt->SetAttr(PC, barK->GetAPowerL());
       qt->SetAttr(QC, barK->GetRPowerL());
@@ -678,14 +681,23 @@ void LoadFlow::CalcPower() {
 
         double vK = barK->GetVoltage();
 
-        generate_power += (-(edge->GetC() + edge->GetSh()) * pow(vK, 2) +
-                              vK * barM->GetVoltage() * (edge->GetC() * cos(theta) - edge->GetS() * sin(theta)));
+        generate_power += (-(edge->GetS() + edge->GetSh()) * pow(vK, 2) +
+                              vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
       }
 
       qt->SetAttr(QG, generate_power);
       report->Insert(barK, qt);
     }
 
+    if(barK->GetType() == LOAD) {
+      Quantity * qt = new Quantity();
+      qt->SetAttr(PG, barK->GetAPowerG());
+      qt->SetAttr(QG, barK->GetRPowerG());
+      qt->SetAttr(PC, barK->GetAPowerL());
+      qt->SetAttr(QC, barK->GetRPowerL());
+
+      report->Insert(barK, qt);
+    }
   }
 }
 
@@ -700,7 +712,7 @@ int main(int argc, char ** argv) {
   Bar * b6 = new Bar(0, 1.070, 11.2, 7.5, 0, 12.2, GENERATION, 6, 0);
   Bar * b7 = new Bar(0,     0, 0, 0, 0, 0, LOAD, 7, 0);
   Bar * b8 = new Bar(0, 1.090, 0, 0, 0, 17.4, GENERATION, 8, 0);
-  Bar * b9 = new Bar(0,     0, 0, 0, 29.5, 16.6, LOAD, 9, 0.19);
+  Bar * b9 = new Bar(0,     0, 29.5, 16.6, 0, 0, LOAD, 9, 0.19);
   Bar * b10 = new Bar(0,    0, 9, 5.8, 0, 0, LOAD, 10, 0);
   Bar * b11 = new Bar(0,    0, 3.5, 1.8, 0, 0, LOAD, 11, 0);
   Bar * b12 = new Bar(0,    0, 6.1, 1.6, 0, 0, LOAD, 12, 0);

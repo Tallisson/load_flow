@@ -113,7 +113,7 @@ void Bar::SetRPowerG(double rPowerG) {
 }
 
 void Bar::SetRPowerL(double rPowerL) {
-  this->rPowerG = rPowerL;
+  this->rPowerL = rPowerL;
 }
 
 void Bar::SetEst(int variable, double value) {
