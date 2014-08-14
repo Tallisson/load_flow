@@ -722,19 +722,23 @@ void LoadFlow::CalcReport() {
         double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
         double vK = barK->GetVoltage();
+        double vM = barM->GetVoltage();
 
-        generate_power += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() *
-                          (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
-        reactive_power += (-(edge->GetS() + edge->GetSh()) * pow(vK, 2) +
-                          vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
+        generate_power += (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                          (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())) );
+        reactive_power += (-(edge->GetS() + edge->GetSh()) * pow((vK *1/edge->GetTap()), 2) +
+                          (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())));
 
-        double p_km = edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
-        double p_mk = edge->GetC() * pow(barM->GetVoltage(), 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) - edge->GetS() * sin(theta));
-        // Qkm(i) = -(bkm(i)+bkm_sh(i))*V(k)^2 + V(k)*V(m)*(bkm(i)*cos(akm)-gkm(i)*sin(akm));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow(vK, 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
-        // Qmk(i) = -(bkm(i)+bkm_sh(i))*V(m)^2 + V(k)*V(m)*(bkm(i)*cos(akm)+gkm(i)*sin(akm));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(barM->GetVoltage(), 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow(vK, 2) + pow(barM->GetVoltage(), 2) - 2 * vK * barM->GetVoltage() * cos(theta));
+        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                              (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                        cos(theta - edge->GetPhi()));
 
         Loss * l = new Loss;
         l->SetAttr(P_IN, p_km);
@@ -771,15 +775,21 @@ void LoadFlow::CalcReport() {
         Node* edge = barK->GetEdge(barM->GetId());
 
         double vK = barK->GetVoltage();
+        double vM = barM->GetVoltage();
 
-        generate_power += (-(edge->GetS() + edge->GetSh()) * pow(vK, 2) +
-                              vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
+        generate_power += (-(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) +
+                          (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
 
-        double p_km = edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
-        double p_mk = edge->GetC() * pow(barM->GetVoltage(), 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) - edge->GetS() * sin(theta));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow(vK, 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(barM->GetVoltage(), 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow(vK, 2) + pow(barM->GetVoltage(), 2) - 2 * vK * barM->GetVoltage() * cos(theta));
+        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                        cos(theta - edge->GetPhi()));
 
         Loss * l = new Loss;
         l->SetAttr(P_IN, p_km);
@@ -812,12 +822,17 @@ void LoadFlow::CalcReport() {
         Node* edge = barK->GetEdge(barM->GetId());
 
         double vK = barK->GetVoltage();
+        double vM = barM->GetVoltage();
 
-        double p_km = edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
-        double p_mk = edge->GetC() * pow(barM->GetVoltage(), 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) - edge->GetS() * sin(theta));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow(vK, 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(barM->GetVoltage(), 2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow(vK, 2) + pow(barM->GetVoltage(), 2) - 2 * vK * barM->GetVoltage() * cos(theta));
+        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM * cos(theta - edge->GetPhi()));
 
         Loss * l = new Loss;
         l->SetAttr(P_IN, p_km);
