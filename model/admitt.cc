@@ -47,3 +47,11 @@ double Admitt::GetAngle() {
 double Admitt::GetTap() {
   return tap;
 }
+
+int Admitt::GetTo() {
+  return to;
+}
+
+int Admitt::GetFrom() {
+  return from;
+}

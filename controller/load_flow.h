@@ -4,9 +4,11 @@
 #include <armadillo>
 #include <iostream>
 #include <stdio.h>
+#include <boost/algorithm/string.hpp>
 #include "../model/graph.h"
 #include "../model/report.h"
 #include "../model/define.h"
+#include "../model/utils.h"
 
 using namespace arma;
 using namespace std;
@@ -47,6 +49,7 @@ private:
   double s_alpha;
 
   Report * report;
+  Desc* description;
 
   void mismatches();
   void solveSys();
@@ -56,6 +59,7 @@ private:
   void initJ();
   void updateState();
   void calcS2();
+  void initialize(const char* file);
   void initialize();
   bool nextIterate();
   void setControlVariables();
@@ -67,10 +71,12 @@ public:
   ~LoadFlow();
 
   int Execute();
+  int Execute(const char* file);
   void Execute(double aInitial, double vInitial);
   void AddBar(Bar* bar);
   void AssocBars(Bar* v, Bar* w, Node* node);
   void AssocBars(Bar* v, Bar* w, Admitt* admitt);
+  void AssocBars(Admitt* admitt);
   Graph * GetGraph();
   Bar * GetBar(int v);
   Node * GetEdge(int v, int w);

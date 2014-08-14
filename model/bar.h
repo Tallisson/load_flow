@@ -54,6 +54,18 @@ public:
     type = atoi(data.at(6).c_str());
     id = atoi(data.at(7).c_str());
     bSh = atof(data.at(8).c_str());
+    /*cout << "angle =" <<  atof(data.at(0).c_str());
+    cout << ", voltage = " << atof(data.at(1).c_str());
+    cout << ", aPowerL = " << atof(data.at(2).c_str());
+    cout << ", rPowerL = " << atof(data.at(3).c_str());
+    cout << ", aPowerG =  " << atof(data.at(4).c_str());
+    cout << ", rPowerG = " <<  atof(data.at(5).c_str());
+    cout << ", type = " << atoi(data.at(6).c_str());
+    cout << ", id = " << atoi(data.at(7).c_str());
+    cout << ", bSh = " << atof(data.at(8).c_str()) << endl;*/
+
+    aPower = aPowerG - aPowerL;
+    rPower = rPowerG - rPowerL;
   };
 
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :

@@ -32,7 +32,7 @@ private:
   static Utils* instance;
 public:
   static Utils* GetInstance();
-  bool ProcessFile(const char* file);
+  Desc* ProcessFile(const char* file);
   void Delete();
   bool ValidateInfSystem(const std::string& s);
   bool ValidateBusData(const std::string& s);
