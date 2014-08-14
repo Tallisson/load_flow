@@ -2,14 +2,16 @@
 #define BAR_H_
 
 #include <boost/container/map.hpp>
+#include <boost/container/vector.hpp>
 #include "node.h"
 #include <string>
+#include <boost/cstdint.hpp>
 
 using namespace boost;
 
 #define SLACK 3
-#define LOAD 2
-#define GENERATION 1
+#define GENERATION 2
+#define LOAD 0
 
 #define VOLTAGE 100
 #define A_POWER 200
@@ -41,6 +43,19 @@ private:
   container::map<int, Node*> impd;
 
 public:
+  Bar(container::vector<string> data)
+  {
+    angle = atof(data.at(0).c_str());
+    voltage = atof(data.at(1).c_str());
+    aPowerL = atof(data.at(2).c_str());
+    rPowerL = atof(data.at(3).c_str());
+    aPowerG =  atof(data.at(4).c_str());
+    rPowerG = atof(data.at(5).c_str());
+    type = atoi(data.at(6).c_str());
+    id = atoi(data.at(7).c_str());
+    bSh = atof(data.at(8).c_str());
+  };
+
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :
       angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), aPowerL(0), rPowerL(0), aPowerG(0), rPowerG(0), type(type), id(id),
       bSh(bSh)
@@ -70,7 +85,6 @@ public:
 
   int GetType();
   int GetId();
-  //int GetBSh();
 
   void SetAngle(double angle);
   void SetVoltage(double voltage);

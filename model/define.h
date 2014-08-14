@@ -20,4 +20,8 @@
 #define Q_OUT 55
 #define LOSS 60
 
+#define INF_SYSTEM 100
+#define INF_BUS 200
+#define INF_BRANCH 300
+
 #endif /* DEFINE_H_ */
