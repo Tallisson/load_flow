@@ -686,6 +686,28 @@ void LoadFlow::setControlVariables() {
   }
 }
 
+void LoadFlow::insertLoss(Node* edge, double vK, double vM, double theta) {
+  double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                                (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+  double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+  double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+  double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+  double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                  cos(theta - edge->GetPhi()));
+
+  Loss * l = new Loss;
+  l->SetAttr(P_IN, p_km);
+  l->SetAttr(P_OUT, p_mk);
+  l->SetAttr(Q_IN, q_km);
+  l->SetAttr(Q_OUT, q_mk);
+  l->SetAttr(LOSS, perdas);
+
+  report->Insert(edge, l);
+}
+
 /*
  * 1) Cálculo de Grandezas: Potência ativa gerada e Potência Reativa Gerada
  * 2) Cálculo de Perdas de Potência:
@@ -721,6 +743,7 @@ void LoadFlow::CalcReport() {
         barM = itN->second;
         double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
+
         double vK = barK->GetVoltage();
         double vM = barM->GetVoltage();
 
@@ -729,25 +752,7 @@ void LoadFlow::CalcReport() {
         reactive_power += (-(edge->GetS() + edge->GetSh()) * pow((vK *1/edge->GetTap()), 2) +
                           (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())));
 
-        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
-                              (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
-        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
-                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
-                        cos(theta - edge->GetPhi()));
-
-        Loss * l = new Loss;
-        l->SetAttr(P_IN, p_km);
-        l->SetAttr(P_OUT, p_mk);
-        l->SetAttr(Q_IN, q_km);
-        l->SetAttr(Q_OUT, q_mk);
-        l->SetAttr(LOSS, perdas);
-
-        report->Insert(edge, l);
+        this->insertLoss(edge, vK, vM, theta);
       }
       qt->SetAttr(PG, generate_power);
       qt->SetAttr(QG, reactive_power);
@@ -780,25 +785,7 @@ void LoadFlow::CalcReport() {
         generate_power += (-(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) +
                           (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
 
-        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
-                      (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
-        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
-                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
-                        cos(theta - edge->GetPhi()));
-
-        Loss * l = new Loss;
-        l->SetAttr(P_IN, p_km);
-        l->SetAttr(P_OUT, p_mk);
-        l->SetAttr(Q_IN, q_km);
-        l->SetAttr(Q_OUT, q_mk);
-        l->SetAttr(LOSS, perdas);
-
-        report->Insert(edge, l);
+        this->insertLoss(edge, vK, vM, theta);
       }
 
       qt->SetAttr(QG, generate_power);
@@ -824,24 +811,7 @@ void LoadFlow::CalcReport() {
         double vK = barK->GetVoltage();
         double vM = barM->GetVoltage();
 
-        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
-                      (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
-        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
-                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
-        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
-        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
-                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM * cos(theta - edge->GetPhi()));
-
-        Loss * l = new Loss;
-        l->SetAttr(P_IN, p_km);
-        l->SetAttr(P_OUT, p_mk);
-        l->SetAttr(Q_IN, q_km);
-        l->SetAttr(Q_OUT, q_mk);
-        l->SetAttr(LOSS, perdas);
-
-        report->Insert(edge, l);
+        this->insertLoss(edge, vK, vM, theta);
       }
     }
 

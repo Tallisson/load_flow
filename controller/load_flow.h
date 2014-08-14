@@ -63,7 +63,7 @@ private:
   void initialize();
   bool nextIterate();
   void setControlVariables();
-
+  void insertLoss(Node* edge, double vK, double vM, double theta);
 public:
   LoadFlow(double error);
   LoadFlow(double error, double sBase);
