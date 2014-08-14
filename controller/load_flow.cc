@@ -264,9 +264,10 @@ void LoadFlow::mismatches() {
 
     if(barK->GetType() != SLACK) {
       double vK = barK->GetVoltage();
-      estP(k) = barK->GetC() * pow(vK, 2);
-      container::map<int, Node*> neighbors = barK->GetWeight();
+      //estP(k) = barK->GetC() * pow(vK, 2);
+      diffP(k) = barK->GetAPower();
 
+      container::map<int, Node*> neighbors = barK->GetWeight();
       Node* edge;
       int m;
       for (container::map<int, Node*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it) {
@@ -275,7 +276,7 @@ void LoadFlow::mismatches() {
         edge = it->second;
         theta = barK->GetAngle() - barM->GetAngle();
 
-        switch(edge->GetType()) {
+        /*switch(edge->GetType()) {
         case FIXED_TAP:
         case VARIABLE_TAP_MVAR:
         case VARIABLE_TAP_VC:
@@ -289,17 +290,21 @@ void LoadFlow::mismatches() {
           break;
         default:
           break;
-        }
+        }*/
 
-        estP(k) +=  -vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+        //estP(k) +=  -vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+        // (g(km)*V(k)^2 - V(k)*V(m)*(g(km)*cos(akm)+b(km)*sin(akm)));
+        diffP(k) = diffP(k) - (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                   (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())));
       }
-
-      diffP(k) = barK->GetAPower() - estP(k);
+      //diffP(k) = barK->GetAPower() - estP(k);
     }
 
     if(barK->GetType() == LOAD) {
       int i = ordPQ.at(barK->GetId()) + (nPQ + nPV);
       double vK = barK->GetVoltage();
+
+      diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(barK->GetVoltage(), 2));
       estP(i) = -pow(vK, 2) * barK->GetS();
       container::map<int, Node*> neighbors = barK->GetWeight();
 
@@ -311,7 +316,7 @@ void LoadFlow::mismatches() {
         edge = it->second;
         theta = barK->GetAngle() - barM->GetAngle();
 
-        switch(edge->GetType()) {
+        /*switch(edge->GetType()) {
         case FIXED_TAP:
         case VARIABLE_TAP_MVAR:
         case VARIABLE_TAP_VC:
@@ -325,14 +330,17 @@ void LoadFlow::mismatches() {
           break;
         default:
           break;
-        }
+        }*/
 
-        estP(i) += vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
+        //estP(i) += vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
+        // mis(nb-1+ordPQ(k)) = mis(nb-1+ordPQ(k)) - (-(b(km)+bsh(km))*V(k)^2 + V(k)*V(m)*(b(km)*cos(akm)-g(km)*sin(akm)));
+        diffP(i) -= -(edge->GetS() + edge->GetSh())  * pow((vK * 1/edge->GetTap()), 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                    (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
       }
 
       // Incluindo Susceptância Nodal na Potência reativa
       // Qg(k) + Bsh(k)*V(k)^2 - Qc(k)
-      diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(barK->GetVoltage(), 2)) - estP(i) ;
+      //diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(barK->GetVoltage(), 2)) - estP(i) ;
     }
 
     it++;
@@ -752,7 +760,27 @@ void LoadFlow::CalcReport() {
         reactive_power += (-(edge->GetS() + edge->GetSh()) * pow((vK *1/edge->GetTap()), 2) +
                           (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())));
 
-        this->insertLoss(edge, vK, vM, theta);
+        double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                                      (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+        double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                      (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+        double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+        double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                      (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+        double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                        cos(theta - edge->GetPhi()));
+
+        Loss * l = new Loss;
+        l->SetAttr(P_IN, p_km);
+        l->SetAttr(P_OUT, p_mk);
+        l->SetAttr(Q_IN, q_km);
+        l->SetAttr(Q_OUT, q_mk);
+        l->SetAttr(LOSS, perdas);
+
+        report->Insert(edge, l);
+
+        //this->insertLoss(edge, vK, vM, theta);
       }
       qt->SetAttr(PG, generate_power);
       qt->SetAttr(QG, reactive_power);
