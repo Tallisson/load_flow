@@ -87,7 +87,7 @@ void exec14() {
   lf->AssocBars(b12, b13, a19);
   lf->AssocBars(b13, b14, a20);
 
-  lf->Execute();
+  //lf->Execute();
   delete lf;
 }
 

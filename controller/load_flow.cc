@@ -104,6 +104,9 @@ void LoadFlow::AssocBars(Bar* v, Bar* w, Admitt* admitt) {
   Node* node = bars->AddEdge(v, w, admitt);
 
   switch(admitt->GetType()) {
+  case TRANSMISSION_LINE:
+    nLT++;
+    break;
   case FIXED_TAP:
     nTAP_Fixed++;
     estCrtlVar.insert( std::pair<Node*, double>(node, 1) );
@@ -129,6 +132,9 @@ void LoadFlow::AssocBars(Admitt* admitt) {
   Node* node = bars->AddEdge(bars->at(admitt->GetTo()), bars->at(admitt->GetFrom()), admitt);
 
   switch(admitt->GetType()) {
+  case TRANSMISSION_LINE:
+    nLT++;
+    break;
   case FIXED_TAP:
     nTAP_Fixed++;
     estCrtlVar.insert( std::pair<Node*, double>(node, 1) );
@@ -578,12 +584,12 @@ void LoadFlow::SetUseBase(bool use_base) {
 void LoadFlow::setControlVariables() {
   for( container::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
     Node * edge = it->first;
-    Bar* crt_bar = bars->at(edge->GetBar());
+    Bar* crt_bar = bars->at(edge->GetCrtBar());
 
     // deltaU = alfa * deltaZ
     // deltaZ = z_esp - z_cal
     switch(edge->GetType()) {
-    case FIXED_TAP:
+    //case FIXED_TAP:
 
     case VARIABLE_TAP_VC:
     {

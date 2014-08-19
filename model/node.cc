@@ -71,7 +71,7 @@ int Node::GetType() {
   return type;
 }
 
-int Node::GetBar() {
+int Node::GetCrtBar() {
   return crt_bar;
 }
 

@@ -48,7 +48,7 @@ public:
   double GetLim(int var);
   int GetId();
   int GetType();
-  int GetBar();
+  int GetCrtBar();
 
   void SetS(double s);
   void SetC(double c);
