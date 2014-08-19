@@ -8,7 +8,9 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
+-include model/subdir.mk
 -include examples/subdir.mk
+-include controller/subdir.mk
 -include bkp/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -45,7 +47,7 @@ all: LoadFlow
 LoadFlow: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++  -o "LoadFlow" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -Llibrt -o "LoadFlow" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

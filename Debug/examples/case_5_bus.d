@@ -1,13 +1,34 @@
 examples/case_5_bus.d: ../examples/case_5_bus.cc \
- ../examples/../load_flow.h ../examples/../graph.h ../examples/../bar.h \
- ../examples/../node.h ../examples/../admitt.h
+ ../examples/../controller/load_flow.h \
+ ../examples/../controller/../model/graph.h \
+ ../examples/../controller/../model/bar.h \
+ ../examples/../controller/../model/node.h \
+ ../examples/../controller/../model/define.h \
+ ../examples/../controller/../model/admitt.h \
+ ../examples/../controller/../model/report.h \
+ ../examples/../controller/../model/quantity.h \
+ ../examples/../controller/../model/loss.h \
+ ../examples/../controller/../model/define.h \
+ ../examples/../controller/../model/utils.h
 
-../examples/../load_flow.h:
+../examples/../controller/load_flow.h:
 
-../examples/../graph.h:
+../examples/../controller/../model/graph.h:
 
-../examples/../bar.h:
+../examples/../controller/../model/bar.h:
 
-../examples/../node.h:
+../examples/../controller/../model/node.h:
 
-../examples/../admitt.h:
+../examples/../controller/../model/define.h:
+
+../examples/../controller/../model/admitt.h:
+
+../examples/../controller/../model/report.h:
+
+../examples/../controller/../model/quantity.h:
+
+../examples/../controller/../model/loss.h:
+
+../examples/../controller/../model/define.h:
+
+../examples/../controller/../model/utils.h:

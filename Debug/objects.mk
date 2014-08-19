@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -llapack -lblas -lgfortran
+LIBS := -llapack -lboost_regex -lrt -lblas -lgfortran
 
