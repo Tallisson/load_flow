@@ -58,7 +58,7 @@ Desc* Utils::ProcessFile(const char* filename) {
         container::vector<std::string> strs;
         split(strs, str, is_any_of("\t "));
         unsigned size = strs.size();
-        if(size == 8) {
+        if(size >= 8) {
           Admitt * ad = new Admitt(strs);
           d->admmits.push_back(ad);
         }
@@ -72,8 +72,6 @@ Desc* Utils::ProcessFile(const char* filename) {
           qtd_branch = atoi(strs.at(2).c_str());
         }
       }
-
-      //std::cout << str << '\n';
   }
 
   return d;

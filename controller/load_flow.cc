@@ -129,7 +129,7 @@ void LoadFlow::AssocBars(Bar* v, Bar* w, Admitt* admitt) {
 }
 
 void LoadFlow::AssocBars(Admitt* admitt) {
-  Node* node = bars->AddEdge(bars->at(admitt->GetTo()), bars->at(admitt->GetFrom()), admitt);
+  Node* node = bars->AddEdge(bars->at(admitt->GetFrom()), bars->at(admitt->GetTo()), admitt);
 
   switch(admitt->GetType()) {
   case TRANSMISSION_LINE:
@@ -282,8 +282,15 @@ void LoadFlow::mismatches() {
         theta = barK->GetAngle() - barM->GetAngle();
 
         // (g(km)*V(k)^2 - V(k)*V(m)*(g(km)*cos(akm)+b(km)*sin(akm)));
-        diffP(k) = diffP(k) - (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+        if(edge->GetFrom() == barK->GetId())
+        {
+          diffP(k) = diffP(k) - (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                    (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())));
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          diffP(k) = diffP(k) - (edge->GetC() * pow(vK, 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                             (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())));
+        }
       }
     }
 
@@ -293,7 +300,7 @@ void LoadFlow::mismatches() {
 
       // Incluindo Susceptância Nodal na Potência reativa
       // Qg(k) + Bsh(k)*V(k)^2 - Qc(k)
-      diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(barK->GetVoltage(), 2));
+      diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(vK, 2));
       container::map<int, Node*> neighbors = barK->GetWeight();
 
       Node* edge;
@@ -305,8 +312,15 @@ void LoadFlow::mismatches() {
         theta = barK->GetAngle() - barM->GetAngle();
 
         // mis(nb-1+ordPQ(k)) = mis(nb-1+ordPQ(k)) - (-(b(km)+bsh(km))*V(k)^2 + V(k)*V(m)*(b(km)*cos(akm)-g(km)*sin(akm)));
-        diffP(i) -= -(edge->GetS() + edge->GetSh())  * pow((vK * 1/edge->GetTap()), 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+        if(edge->GetFrom() == barK->GetId())
+        {
+          diffP(i) -= -((edge->GetS() * pow(1/edge->GetTap(), 2)) + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                     (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          diffP(i) -= -(edge->GetS() + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                              (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi()));
+        }
       }
 
     }
@@ -339,7 +353,15 @@ void LoadFlow::DpDer() {
 
         // dPk em relação a 'ak '.
         // -V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm)) + Jac(k-1, k-1);
-        jacobian(k, k) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta)) + jacobian(k, k);
+        if(edge->GetFrom() == barK->GetId())
+        {
+          jacobian(k, k) = -(barK->GetVoltage()* 1/edge->GetTap()) * barM->GetVoltage() *
+                            (edge->GetC() * sin(theta - edge->GetPhi()) - edge->GetS() * cos(theta - edge->GetPhi())) + jacobian(k, k);
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          jacobian(k, k) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta - edge->GetPhi()) -
+                            edge->GetS() * cos(theta - edge->GetPhi())) + jacobian(k, k);
+        }
 
         // dPk em relação a 'am' (exceto quando m for a barra slack).
         if(barM->GetType() != SLACK) {
@@ -353,15 +375,30 @@ void LoadFlow::DpDer() {
         if(barK->GetType() == LOAD) {
           // -2*g(km)*V(k) + V(m)*(g(km)*cos(akm)+b(km)*sin(akm)) + Jac(k-1, nb-1+ordPQ(k));
           m = noSlack + ordPQ.at(barK->GetId());
-          jacobian(k, m) = -2 * edge->GetC() * barK->GetVoltage() + barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta))
-                                  + jacobian(k, m);
+          if(edge->GetFrom() == barK->GetId())
+          {
+            jacobian(k, m) = -2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
+                             (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())) + jacobian(k, m);
+          } else if(edge->GetFrom() == barM->GetId())
+          {
+            jacobian(k, m) = -2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
+                             (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())) + jacobian(k, m);
+          }
         }
 
         // dPk em relação a 'vm'.
         if(barM->GetType() == LOAD) {
           // V(k)*(g(km)*cos(akm)+b(km)*sin(akm));
           m = noSlack + ordPQ.at(barM->GetId());
-          jacobian(k, m) = barK->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+
+          if(edge->GetFrom() == barK->GetId())
+          {
+            jacobian(k, m) = (barK->GetVoltage() * edge->GetTap()) *
+                             (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+          } else if(edge->GetFrom() == barM->GetId()) {
+            jacobian(k, m) = (barK->GetVoltage() * edge->GetTap()) *
+                               (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+          }
         }
       }
     }
@@ -392,20 +429,42 @@ void LoadFlow::DqDer() {
         // dQk em relaçao a 'ak'.
         // V(k)*V(m)*(b(km)*sin(akm)+g(km)*cos(akm)) + Jac(nb-1+ordPQ(k), k-1);
         m = ord.at(barK->GetId());
-        jacobian(k, m) = barK->GetVoltage() * barM->GetVoltage() * (edge->GetS() * sin(theta) + edge->GetC() * cos(theta))
-                          + jacobian(k, m);
+        if(edge->GetFrom() == barK->GetId())
+        {
+          jacobian(k, m) = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                            (edge->GetS() * sin(theta - edge->GetPhi()) + edge->GetC() * cos(theta - edge->GetPhi())) + jacobian(k, m);
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          jacobian(k, m) = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                            (edge->GetS() * sin(theta + edge->GetPhi()) + edge->GetC() * cos(theta + edge->GetPhi())) + jacobian(k, m);
+        }
 
         // dQk em relaçao a 'am' (exceto quando m for a barra slack).
         if(barM->GetType() != SLACK) {
           // -V(k)*V(m)*(g(km)*cos(akm)+b(km)*sin(akm));
           m = ord.at(barM->GetId());
-          jacobian(k, m) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta));
+          if(edge->GetFrom() == barK->GetId())
+          {
+            jacobian(k, m) = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                            (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+          } else if(edge->GetFrom() == barM->GetId())
+          {
+            jacobian(k, m) = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                              (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+          }
         }
 
         // dQk em relaçao a 'vk'.
         // 2*(b(km)+bsh(km))*V(k) - V(m)*(b(km)*cos(akm)-g(km)*sin(akm)) + Jac(nb-1+ordPQ(k), nb-1+ordPQ(k));
-        jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * barK->GetVoltage() -
-                              barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)) + jacobian(k, k);
+        if(edge->GetFrom() == barK->GetId())
+        {
+          jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) - barM->GetVoltage() *
+                              (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())) + jacobian(k, k);
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) -
+                                        barM->GetVoltage() * (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi())) + jacobian(k, k);
+        }
         // dQk em relacao a 'vm'.
         if(barM->GetType() == LOAD) {
           // -V(k)*(b(km)*cos(akm)-g(km)*sin(akm));
@@ -415,7 +474,15 @@ void LoadFlow::DqDer() {
             index++;
           }*/
           m = ordPQ.at(barM->GetId()) + noSlack;
-          jacobian(k, m) = -barK->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta));
+          if(edge->GetFrom() == barK->GetId())
+          {
+            jacobian(k, m) = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta - edge->GetPhi()) -
+                             edge->GetC() * sin(theta - edge->GetPhi()));
+          } else if(edge->GetFrom() == barM->GetId())
+          {
+            jacobian(k, m) = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta + edge->GetPhi()) -
+                             edge->GetC() * sin(theta + edge->GetPhi()));
+          }
         }
       }
 
@@ -453,7 +520,15 @@ void LoadFlow::calcS2() {
 
         // (gkm(km)*V(k)^2 - V(k)*V(m)*(gkm(km)*cos(akm)+bkm(km)*sin(akm)));
         double vK = barK->GetVoltage();
-        sum += (edge->GetC() * pow(vK, 2) - vK * barM->GetVoltage() * (edge->GetC() * cos(theta) + edge->GetS() * sin(theta)) );
+        if(edge->GetFrom() == barK->GetId())
+        {
+          sum += (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) *
+                  barM->GetVoltage() * (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())) );
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          sum += (edge->GetC() * pow(vK, 2) - (vK * 1/edge->GetTap()) *
+                 barM->GetVoltage() * (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())) );
+        }
       }
       barK->SetAPower(sum);
 
@@ -470,7 +545,15 @@ void LoadFlow::calcS2() {
 
         // (-(bkm(km)+bkm_sh(km))*V(k)^2 + V(k)*V(m)*(bkm(km)*cos(akm)-gkm(km)*sin(akm)));
         double vK = barK->GetVoltage();
-        sum += (-(edge->GetS() + edge->GetSh()) * pow(vK,2) + vK * barM->GetVoltage() * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)) );
+        if(edge->GetFrom() == barK->GetId())
+        {
+          sum += (-(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()),2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                  (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())) );
+        } else if(edge->GetFrom() == barM->GetId())
+        {
+          sum += (-(edge->GetS() + edge->GetSh()) * pow(vK,2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+                  (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi())) );
+        }
       }
       barK->SetRPower(sum);
 
@@ -662,17 +745,37 @@ void LoadFlow::setControlVariables() {
   }
 }
 
-void LoadFlow::insertLoss(Node* edge, double vK, double vM, double theta) {
-  double p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
-                                (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
-  double p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
-                (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
-  double q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
-                (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
-  double q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
-                (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
-  double perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
-                  cos(theta - edge->GetPhi()));
+void LoadFlow::insertLoss(Node* edge, Bar* barK, Bar* barM) {
+  double vK = barK->GetVoltage();
+  double vM = barM->GetVoltage();
+  double theta = barK->GetAngle() - barM->GetAngle();
+  double p_km, p_mk, q_km, q_mk, perdas;
+
+  if(edge->GetFrom() == barK->GetId())
+  {
+    p_km = edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * vM *
+                  (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+    p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                  (edge->GetC() * cos(theta - edge->GetPhi()) - edge->GetS() * sin(theta - edge->GetPhi()));
+    q_km = -(pow(edge->GetS() * 1/edge->GetTap(), 2) + edge->GetSh()) * pow(vK, 2) + (1 / edge->GetTap() * vK) * vM *
+                  (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
+    q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                  (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+    perdas = edge->GetC() * (pow((vK * 1/edge->GetTap()), 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                    cos(theta - edge->GetPhi()));
+  } else if(edge->GetFrom() == barM->GetId())
+  {
+    p_km = edge->GetC() * pow(vK, 2) - (vK * 1/edge->GetTap()) * vM *
+                  (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+    p_mk = edge->GetC() * pow(vM, 2) - (1/edge->GetTap() * vK) * vM *
+                  (edge->GetC() * cos(theta + edge->GetPhi()) - edge->GetS() * sin(theta + edge->GetPhi()));
+    q_km = -(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) + (1 / edge->GetTap() * vK) * vM *
+                  (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi()));
+    q_mk = -(edge->GetS() + edge->GetSh()) * pow(vM, 2) + (1/edge->GetTap() * vK) * vM *
+                  (edge->GetS() * cos(theta) + edge->GetC() * sin(theta));
+    perdas = edge->GetC() * (pow(vK, 2) + pow(vM, 2) - 2 * (1/edge->GetTap() * vK) * vM *
+                    cos(theta + edge->GetPhi()));
+  }
 
   Loss * l = new Loss;
   l->SetAttr(P_IN, p_km);
@@ -717,15 +820,17 @@ void LoadFlow::CalcReport() {
       container::map<int, Bar*> neighbors = barK->GetNs();
       for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
-        double theta = barK->GetAngle() - barM->GetAngle();
+        //double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
 
-        double vK = barK->GetVoltage();
-        double vM = barM->GetVoltage();
+        /*double vK = barK->GetVoltage();
+        double vM = barM->GetVoltage();*/
 
-        this->insertLoss(edge, vK, vM, theta);
+        //this->insertLoss(edge, vK, vM, theta);
+        this->insertLoss(edge, barK, barM);
       }
       qt->SetAttr(PG, generate_power);
+
       qt->SetAttr(QG, reactive_power);
 
       report->Insert(barK, qt);
@@ -753,10 +858,11 @@ void LoadFlow::CalcReport() {
         double vK = barK->GetVoltage();
         double vM = barM->GetVoltage();
 
-        generate_power += (-(edge->GetS() + edge->GetSh()) * pow((vK * 1/edge->GetTap()), 2) +
+        generate_power += (-(edge->GetS() * pow(1/edge->GetTap(), 2) + edge->GetSh()) * pow(vK, 2) +
                           (vK * 1/edge->GetTap()) * vM * (edge->GetS() * cos(theta) - edge->GetC() * sin(theta)));
 
-        this->insertLoss(edge, vK, vM, theta);
+        //this->insertLoss(edge, vK, vM, theta);
+        this->insertLoss(edge, barK, barM);
       }
 
       qt->SetAttr(QG, generate_power);
@@ -776,13 +882,14 @@ void LoadFlow::CalcReport() {
       container::map<int, Bar*> neighbors = barK->GetNs();
       for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
-        double theta = barK->GetAngle() - barM->GetAngle();
+        //double theta = barK->GetAngle() - barM->GetAngle();
         Node* edge = barK->GetEdge(barM->GetId());
 
-        double vK = barK->GetVoltage();
-        double vM = barM->GetVoltage();
+        /*double vK = barK->GetVoltage();
+        double vM = barM->GetVoltage();*/
 
-        this->insertLoss(edge, vK, vM, theta);
+        //this->insertLoss(edge, vK, vM, theta);
+        this->insertLoss(edge, barK, barM);
       }
     }
 

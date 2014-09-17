@@ -93,9 +93,8 @@ Node * Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
 
   double c = r / (pow(r, 2) + pow(x, 2));
   double s = -x / (pow(r, 2) + pow(x, 2));
-  /*cout << "G(" << v.GetId()+1 << w.GetId()+1 << ") = " << c << endl;
-  cout << "b(" << v.GetId()+1 << w.GetId()+1 << ") = " << s << endl;*/
-  Node * node = new Node(c, s, sh, admitt->GetTap(), admitt->GetAngle());
+
+  Node * node = new Node(c, s, sh, admitt->GetTap(), admitt->GetAngle(), admitt->GetFrom(), admitt->GetTo());
 
   AddEdge(v, w, node);
 

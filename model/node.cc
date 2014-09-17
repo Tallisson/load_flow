@@ -95,3 +95,13 @@ double Node::GetLim(int var) {
 
   return 0;
 }
+
+int Node::GetFrom()
+{
+  return from;
+}
+
+int Node::GetTo()
+{
+  return to;
+}

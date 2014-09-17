@@ -24,6 +24,14 @@ void Admitt::SetAngle(double angle) {
   this->angle_phi = angle;
 }
 
+void Admitt::SetMaxLim(double max) {
+  max_lim = max;
+}
+
+void Admitt::SetMinLim(double min) {
+  min_lim = min;
+}
+
 double Admitt::GetR() {
   return r;
 }
@@ -54,4 +62,12 @@ int Admitt::GetTo() {
 
 int Admitt::GetFrom() {
   return from;
+}
+
+double Admitt::GetMaxLim() {
+  return max_lim;
+}
+
+double Admitt::GetMinLim() {
+  return min_lim;
 }
