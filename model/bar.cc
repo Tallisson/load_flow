@@ -4,6 +4,9 @@
 
 using namespace std;
 
+namespace load
+{
+
 Bar::~Bar() {
   neighbors.clear();
   impd.clear();
@@ -173,4 +176,5 @@ void Bar::SetBSh(double bSh) {
 void Bar::Clear() {
   neighbors.clear();
   impd.clear();
+}
 }

@@ -14,6 +14,9 @@ using namespace arma;
 using namespace std;
 using namespace boost;
 
+namespace load
+{
+
 class LoadFlow {
 private:
   int numB;
@@ -87,5 +90,5 @@ public:
   void SetUseBase(bool use_base);
   void CalcReport();
 };
-
+}
 #endif /* LOAD_FLOW_H_ */

@@ -13,6 +13,8 @@
 #include "admitt.h"
 #include "define.h"
 
+namespace load
+{
 
 typedef struct Desc {
 public:
@@ -38,6 +40,6 @@ public:
   bool ValidateBusData(const std::string& s);
   bool ValidateBranchData(const std::string& s);
 };
-
+}
 
 #endif /* UTILS_H_ */

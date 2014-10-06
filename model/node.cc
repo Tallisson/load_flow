@@ -1,5 +1,8 @@
 #include "node.h"
 
+namespace load
+{
+
 double Node::GetC() {
   return c;
 }
@@ -104,4 +107,5 @@ int Node::GetFrom()
 int Node::GetTo()
 {
   return to;
+}
 }

@@ -8,6 +8,9 @@
 #ifndef QUANTITY_H_
 #define QUANTITY_H_
 
+namespace load
+{
+
 #define PG 10
 #define PC 15
 #define QG 20
@@ -25,6 +28,6 @@ public:
   Quantity();
   ~Quantity();
 };
-
+}
 
 #endif /* QUANTITY_H_ */

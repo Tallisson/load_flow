@@ -3,6 +3,9 @@
 
 #include "define.h"
 
+namespace load
+{
+
 class Loss{
 private:
   double p_in_branch;
@@ -17,5 +20,6 @@ public:
   double GetAttr(int attr);
 };
 
+}
 
 #endif /* LOSS_H_ */

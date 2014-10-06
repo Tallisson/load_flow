@@ -1,5 +1,8 @@
 #include "admitt.h"
 
+namespace load
+{
+
 void Admitt::SetR(double r) {
   this->r = r;
 }
@@ -70,4 +73,9 @@ double Admitt::GetMaxLim() {
 
 double Admitt::GetMinLim() {
   return min_lim;
+}
+
+int Admitt::GetCrtBar() {
+  return crt_bar;
+}
 }

@@ -1,5 +1,8 @@
 #include "quantity.h"
 
+namespace load
+{
+
 Quantity::Quantity(): pg(0), pc(0), qg(0), qc(0) {
 }
 
@@ -40,4 +43,5 @@ double Quantity::GetAttr(int attr) {
   }
 
   return 0;
+}
 }

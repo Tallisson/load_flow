@@ -5,6 +5,9 @@
 //using namespace std;
 using namespace boost;
 
+namespace load
+{
+
 class Graph {
 private:
   int numV;
@@ -28,3 +31,4 @@ public:
   container::map<int, Bar*> GetBars();
   int GetSize();
 };
+}

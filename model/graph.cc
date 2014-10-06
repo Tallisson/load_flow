@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+namespace load
+{
 Graph::Graph(int numV):
 numV(numV), numE(0), simetric(true)
 {
@@ -94,7 +96,9 @@ Node * Graph::AddEdge(Bar* v, Bar* w, Admitt* admitt) {
   double c = r / (pow(r, 2) + pow(x, 2));
   double s = -x / (pow(r, 2) + pow(x, 2));
 
-  Node * node = new Node(c, s, sh, admitt->GetTap(), admitt->GetAngle(), admitt->GetFrom(), admitt->GetTo());
+  Node * node = new Node(c, s, sh, admitt->GetTap(), admitt->GetAngle(), admitt->GetType(),
+                         admitt->GetMinLim(), admitt->GetMaxLim(),
+                         admitt->GetFrom(), admitt->GetTo(), admitt->GetCrtBar());
 
   AddEdge(v, w, node);
 
@@ -107,4 +111,5 @@ container::map<int, Bar*> Graph::GetBars() {
 
 int Graph::GetSize() {
   return bars.size();
+}
 }

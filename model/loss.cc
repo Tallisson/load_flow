@@ -1,5 +1,8 @@
 #include "loss.h"
 
+namespace load
+{
+
 Loss::Loss() {
 }
 
@@ -45,4 +48,6 @@ double Loss::GetAttr(int attr) {
   }
 
   return 0;
+}
+
 }

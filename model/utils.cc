@@ -2,6 +2,9 @@
 
 using namespace boost;
 
+namespace load
+{
+
 Utils * Utils::instance = NULL;
 
 Utils* Utils::GetInstance() {
@@ -90,4 +93,5 @@ bool Utils::ValidateBusData(const std::string& s) {
 bool Utils::ValidateBranchData(const std::string& s) {
   regex e("\\A(Branch Data[\\s]{1}[\\d]{1, 3})\\z");
   return regex_match(s, e);
+}
 }

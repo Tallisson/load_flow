@@ -8,6 +8,9 @@
 
 using namespace boost;
 
+namespace load
+{
+
 class Report{
 private:
   container::map<Bar*, Quantity*> power;
@@ -23,6 +26,6 @@ public:
   Report();
   ~Report();
 };
-
+}
 
 #endif /* REPORT_H_ */

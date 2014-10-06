@@ -19,6 +19,10 @@ using namespace boost;
 
 using namespace std;
 
+
+namespace load
+{
+
 class Bar {
 private:
   double angle;
@@ -109,5 +113,5 @@ public:
   Node * GetEdge(int n);
   void Clear();
 };
-
+}
 #endif /* BAR_H_ */

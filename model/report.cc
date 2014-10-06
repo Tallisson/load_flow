@@ -1,5 +1,8 @@
 #include "report.h"
 
+namespace load
+{
+
 void Report::Insert(Bar* bar, Quantity * q) {
   power.insert(pair<Bar*, Quantity*>(bar, q));
 }
@@ -30,4 +33,6 @@ Report::Report() {
 Report::~Report() {
   power.clear();
   losses.clear();
+}
+
 }

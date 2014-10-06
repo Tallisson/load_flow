@@ -8,6 +8,9 @@
 #ifndef DEFINE_H_
 #define DEFINE_H_
 
+namespace load
+{
+
 #define TRANSMISSION_LINE 0
 #define FIXED_TAP 1
 #define VARIABLE_TAP_VC 2
@@ -23,5 +26,5 @@
 #define INF_SYSTEM 100
 #define INF_BUS 200
 #define INF_BRANCH 300
-
+}
 #endif /* DEFINE_H_ */

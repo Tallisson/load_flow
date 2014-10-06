@@ -8,6 +8,9 @@ using namespace boost;
 #define ERROR 0.0001
 #define S_BASE 100
 
+namespace load
+{
+
 LoadFlow::LoadFlow(double error):
     numB(0), nPV(0), nPQ(0), cont(0), nLT(0), nTAP_Fixed(0), nTap_VC(0), nTap_MVAR(0), nTAP_PHASE(0),
     error(error), sBase(S_BASE), use_base(true), verbose(true), s_alpha(1)
@@ -895,6 +898,9 @@ void LoadFlow::CalcReport() {
 
   }
 }
+}
+
+using namespace load;
 
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
