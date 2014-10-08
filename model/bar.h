@@ -49,14 +49,14 @@ private:
 public:
   Bar(container::vector<string> data)
   {
-    actual_angle = angle = (atof(data.at(0).c_str()) * M_PI / 180);
-    actual_voltage = voltage = atof(data.at(1).c_str());
-    aPowerL = atof(data.at(2).c_str());
-    rPowerL = atof(data.at(3).c_str());
-    aPowerG =  atof(data.at(4).c_str());
-    rPowerG = atof(data.at(5).c_str());
-    type = atoi(data.at(6).c_str());
-    id = atoi(data.at(7).c_str());
+    id = atoi(data.at(0).c_str());
+    type = atoi(data.at(1).c_str());
+    actual_voltage = voltage = atof(data.at(2).c_str());
+    actual_angle = angle = (atof(data.at(3).c_str()) * M_PI / 180);
+    aPowerL = atof(data.at(4).c_str());
+    rPowerL = atof(data.at(5).c_str());
+    aPowerG =  atof(data.at(6).c_str());
+    rPowerG = atof(data.at(7).c_str());
     bSh = atof(data.at(8).c_str());
 
     erroQ = 0;

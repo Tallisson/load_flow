@@ -897,5 +897,5 @@ using namespace load;
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
 
-  lf->Execute("/home/thiago/workspace/ler.txt");
+  lf->Execute("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
 }
