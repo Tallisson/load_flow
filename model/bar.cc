@@ -18,6 +18,7 @@ double Bar::GetAngle() {
 
 double Bar::GetVoltage() {
   return voltage;
+
 }
 
 double Bar::GetAPower() {
@@ -121,16 +122,11 @@ void Bar::SetRPowerL(double rPowerL) {
 
 void Bar::SetEst(int variable, double value) {
   switch(variable) {
-  case VOLTAGE:
-    this->calcV = value;
-    break;
   case A_POWER:
-    this->calcP = value;
+    this->erroP = value;
     break;
   case R_POWER:
-    this->calcQ = value;
-    break;
-  default:
+    this->erroQ = value;
     break;
   }
 }
@@ -154,15 +150,11 @@ double Bar::GetRPowerL() {
 double Bar::GetEst(int variable) {
   switch(variable) {
   case VOLTAGE:
-    return this->calcV;
-    break;
   case A_POWER:
-    return this->calcP;
+    return this->erroP;
     break;
   case R_POWER:
-    return this->calcQ;
-    break;
-  default:
+    return this->erroQ;
     break;
   }
 
@@ -177,4 +169,15 @@ void Bar::Clear() {
   neighbors.clear();
   impd.clear();
 }
+
+double Bar::GetActualAngle()
+{
+  return actual_angle;
+}
+
+double Bar::GetActualVoltage()
+{
+  return actual_voltage;
+}
+
 }

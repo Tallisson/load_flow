@@ -3,11 +3,6 @@
 using namespace std;
 using namespace boost;
 
-#define ANGLE_INIT 0
-#define VOLTAGE_INIT 1
-#define ERROR 0.0001
-#define S_BASE 100
-
 namespace load
 {
 
@@ -244,8 +239,9 @@ void LoadFlow::updateState() {
   for(int k = 0; it != ord.end(); k++) {
     barK = bars->at(it->first);
 
-    if(barK->GetType() != SLACK)
+    if(barK->GetType() != SLACK) {
       barK->SetAngle(barK->GetAngle() + diffS(k));
+    }
 
     if(barK->GetType() == LOAD) {
       int i = ordPQ.at(barK->GetId()) + (nPV + nPQ);
@@ -295,6 +291,8 @@ void LoadFlow::mismatches() {
                              (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())));
         }
       }
+      barK->SetEst(A_POWER, diffP(k));
+
     }
 
     if(barK->GetType() == LOAD) {
@@ -326,6 +324,7 @@ void LoadFlow::mismatches() {
         }
       }
 
+      barK->SetEst(R_POWER, diffP(i));
     }
 
     it++;
@@ -335,6 +334,7 @@ void LoadFlow::mismatches() {
 
 void LoadFlow::solveSys() {
   mat m = inv(jacobian);
+  cout << "Mue sovos!" << endl;
   diffS = m*-diffP;
 }
 
@@ -621,7 +621,7 @@ int LoadFlow::Execute(const char * file) {
       Bar * b = bars->at(i+1);
 
       //cout << "Barra(" << b->GetId()+1 << "): Estado(a, v, p, q): (" << b->GetAngle() << ", " << b->GetVoltage() << ", " << b->GetAPower() << ", " << b->GetRPower() << ")" << endl;
-      printf("Barra(%d)=> Angulo: %.5f, Voltagem: %.5f\n", b->GetId(), b->GetAngle(), b->GetVoltage());
+      printf("Barra(%d)=> Angulo: %.5f, Angulo Real: %.5f, Voltagem: %.5f, Voltagem Real: %.5f\n", b->GetId(), b->GetAngle(), b->GetActualAngle(), b->GetVoltage(), b->GetActualVoltage());
     }
   }
 
@@ -670,7 +670,7 @@ void LoadFlow::SetUseBase(bool use_base) {
 void LoadFlow::setControlVariables() {
   for( container::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
     Node * edge = it->first;
-    Bar* crt_bar = bars->at(edge->GetCrtBar());
+    Bar* crt_bar = bars->at(edge->GetCrtBar() - 1);
 
     // deltaU = alfa * deltaZ
     // deltaZ = z_esp - z_cal
@@ -680,7 +680,7 @@ void LoadFlow::setControlVariables() {
     case VARIABLE_TAP_VC:
     {
       double old_tap = it->second;
-      double delta_z = crt_bar->GetEst(VOLTAGE) - crt_bar->GetVoltage();
+      double delta_z = abs(crt_bar->GetAngle() - crt_bar->GetActualAngle());
 
       if(delta_z > error) {
         double new_tap = old_tap + s_alpha * (delta_z);
@@ -702,7 +702,7 @@ void LoadFlow::setControlVariables() {
     case VARIABLE_TAP_MVAR:
     {
       double old_tap = it->second;
-      double delta_z = crt_bar->GetEst(R_POWER) - crt_bar->GetRPower();
+      double delta_z = abs(crt_bar->GetEst(R_POWER));
       if(delta_z > error) {
         double new_tap = old_tap + s_alpha * (delta_z);
 
@@ -723,7 +723,7 @@ void LoadFlow::setControlVariables() {
     case VARIABLE_PHASE_ANGLE:
     {
       double old_angle = it->second;
-      double delta_z = crt_bar->GetEst(A_POWER) - crt_bar->GetAPower();
+      double delta_z = abs(crt_bar->GetEst(A_POWER));
 
       if(delta_z > error) {
         double new_angle = old_angle + s_alpha * (delta_z);
@@ -743,7 +743,9 @@ void LoadFlow::setControlVariables() {
       break;
     }
     default:
-      break;
+    {
+    }
+    break;
     }
   }
 }
@@ -823,13 +825,8 @@ void LoadFlow::CalcReport() {
       container::map<int, Bar*> neighbors = barK->GetNs();
       for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
-        //double theta = barK->GetAngle() - barM->GetAngle();
+
         Node* edge = barK->GetEdge(barM->GetId());
-
-        /*double vK = barK->GetVoltage();
-        double vM = barM->GetVoltage();*/
-
-        //this->insertLoss(edge, vK, vM, theta);
         this->insertLoss(edge, barK, barM);
       }
       qt->SetAttr(PG, generate_power);
@@ -885,13 +882,8 @@ void LoadFlow::CalcReport() {
       container::map<int, Bar*> neighbors = barK->GetNs();
       for(container::map<int, Bar*>::iterator itN = neighbors.begin(); itN != neighbors.end(); itN++) {
         barM = itN->second;
-        //double theta = barK->GetAngle() - barM->GetAngle();
+
         Node* edge = barK->GetEdge(barM->GetId());
-
-        /*double vK = barK->GetVoltage();
-        double vM = barM->GetVoltage();*/
-
-        //this->insertLoss(edge, vK, vM, theta);
         this->insertLoss(edge, barK, barM);
       }
     }

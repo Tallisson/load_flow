@@ -8,6 +8,10 @@
 #include <boost/cstdint.hpp>
 
 using namespace boost;
+using namespace std;
+
+namespace load
+{
 
 #define SLACK 3
 #define GENERATION 2
@@ -16,12 +20,7 @@ using namespace boost;
 #define VOLTAGE 100
 #define A_POWER 200
 #define R_POWER 300
-
-using namespace std;
-
-
-namespace load
-{
+#define ANGLE 400
 
 class Bar {
 private:
@@ -39,9 +38,10 @@ private:
   double s;
   double bSh;
 
-  double calcV;
-  double calcQ;
-  double calcP;
+  double actual_angle;
+  double actual_voltage;
+  double erroQ;
+  double erroP;
 
   container::map<int, Bar*> neighbors;
   container::map<int, Node*> impd;
@@ -49,8 +49,8 @@ private:
 public:
   Bar(container::vector<string> data)
   {
-    angle = atof(data.at(0).c_str());
-    voltage = atof(data.at(1).c_str());
+    actual_angle = angle = (atof(data.at(0).c_str()) * M_PI / 180);
+    actual_voltage = voltage = atof(data.at(1).c_str());
     aPowerL = atof(data.at(2).c_str());
     rPowerL = atof(data.at(3).c_str());
     aPowerG =  atof(data.at(4).c_str());
@@ -59,17 +59,21 @@ public:
     id = atoi(data.at(7).c_str());
     bSh = atof(data.at(8).c_str());
 
+    erroQ = 0;
+    erroP = 0;
+
     aPower = aPowerG - aPowerL;
     rPower = rPowerG - rPowerL;
   };
 
   Bar(double angle, double voltage, double aPower, double rPower, int type, int id, double bSh) :
       angle(angle), voltage(voltage), aPower(aPower), rPower(rPower), aPowerL(0), rPowerL(0), aPowerG(0), rPowerG(0), type(type), id(id),
-      bSh(bSh)
+      bSh(bSh), actual_angle(0), actual_voltage(0), erroQ(0), erroP(0)
   {};
 
   Bar(double angle, double voltage, double aPowerL, double rPowerL, double aPowerG, double rPowerG, int type, int id, double bSh) :
-    angle(angle), voltage(voltage), aPowerL(aPowerL), rPowerL(rPowerL), aPowerG(aPowerG), rPowerG(rPowerG), type(type), id(id), c(0), s(0), bSh(bSh)
+    angle(angle), voltage(voltage), aPowerL(aPowerL), rPowerL(rPowerL), aPowerG(aPowerG), rPowerG(rPowerG), type(type), id(id), c(0), s(0), bSh(bSh),
+    actual_angle(0), actual_voltage(0), erroQ(0), erroP(0)
   {
     aPower = aPowerG - aPowerL;
     rPower = rPowerG - rPowerL;
@@ -78,7 +82,9 @@ public:
   ~Bar();
 
   double GetAngle();
+  double GetActualAngle();
   double GetVoltage();
+  double GetActualVoltage();
   double GetAPower();
   double GetRPower();
   double GetAPowerG();

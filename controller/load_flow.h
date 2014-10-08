@@ -17,6 +17,11 @@ using namespace boost;
 namespace load
 {
 
+#define ANGLE_INIT 0
+#define VOLTAGE_INIT 1
+#define ERROR 0.0001
+#define S_BASE 100
+
 class LoadFlow {
 private:
   int numB;
@@ -88,6 +93,7 @@ public:
   void DpDer();
   void DqDer();
   void SetUseBase(bool use_base);
+  void SetVerbose(bool v);
   void CalcReport();
 };
 }
