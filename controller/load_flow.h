@@ -67,8 +67,6 @@ private:
   void initJ();
   void updateState();
   void calcS2();
-  void initialize(const char* file);
-  void initialize();
   bool nextIterate();
   void setControlVariables();
   //void insertLoss(Node* edge, double vK, double vM, double theta);
@@ -80,7 +78,6 @@ public:
   ~LoadFlow();
 
   int Execute();
-  int Execute(const char* file);
   void Execute(double aInitial, double vInitial);
   void AddBar(Bar* bar);
   void AssocBars(Bar* v, Bar* w, Node* node);
@@ -95,6 +92,9 @@ public:
   void SetUseBase(bool use_base);
   void SetVerbose(bool v);
   void CalcReport();
+
+  void initialize(const char* file);
+  void initialize();
 };
 }
 #endif /* LOAD_FLOW_H_ */

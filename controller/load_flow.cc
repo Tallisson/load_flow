@@ -334,7 +334,6 @@ void LoadFlow::mismatches() {
 
 void LoadFlow::solveSys() {
   mat m = inv(jacobian);
-  cout << "Mue sovos!" << endl;
   diffS = m*-diffP;
 }
 
@@ -565,16 +564,12 @@ void LoadFlow::calcS2() {
 }
 
 int LoadFlow::Execute() {
-  return Execute("");
-}
-
-int LoadFlow::Execute(const char * file) {
   int counter = 0;
-  if(!boost::iequals(string(file), string(""))) {
+  /*if(!boost::iequals(string(file), string(""))) {
     initialize(file);
   } else {
     initialize();
-  }
+  }*/
 
   mismatches();
 
@@ -670,7 +665,8 @@ void LoadFlow::SetUseBase(bool use_base) {
 void LoadFlow::setControlVariables() {
   for( container::map<Node*, double>::iterator it = estCrtlVar.begin(); it != estCrtlVar.end(); it++ ) {
     Node * edge = it->first;
-    Bar* crt_bar = bars->at(edge->GetCrtBar() - 1);
+    //Bar* crt_bar = bars->at(edge->GetCrtBar() - 1);
+    Bar * crt_bar = bars->at(0);
 
     // deltaU = alfa * deltaZ
     // deltaZ = z_esp - z_cal
@@ -897,5 +893,6 @@ using namespace load;
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
 
-  lf->Execute("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
+  lf->initialize("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
+  lf->Execute();
 }
