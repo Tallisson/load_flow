@@ -32,13 +32,13 @@ public:
   Node(double c, double s, int from, int to):
     c(c), s(s), sh(0), tap(1), type(TRANSMISSION_LINE),
     angle_phi(0), min_lim_tap(0), max_lim_tap(0), min_lim_phi(0),
-    max_lim_phi(0), from(from), to(to), crt_bar(-1)
+    max_lim_phi(0), from(from), to(to), crt_bar(0)
   {};
 
   Node(double c, double s, double sh, int from, int to):
     c(c), s(s), sh(sh), tap(1), type(TRANSMISSION_LINE),
     angle_phi(0), min_lim_tap(0), max_lim_tap(0),
-    min_lim_phi(0), max_lim_phi(0), from(from), to(to), crt_bar(-1)
+    min_lim_phi(0), max_lim_phi(0), from(from), to(to), crt_bar(0)
   {};
 
   Node(double c, double s, double sh, double tap, int type,
@@ -70,7 +70,7 @@ public:
   {
   };
 
-  Node(): c(0), s(0), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0), from(from), to(to), crt_bar(-1)
+  Node(): c(0), s(0), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0), from(from), to(to), crt_bar(0)
   {};
 
   double GetS();

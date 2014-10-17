@@ -209,6 +209,16 @@ void LoadFlow::initialize() {
 }
 
 void LoadFlow::initialize(const char* file) {
+  numB = 0;
+  nPV = 0;
+  nPQ = 0,
+  cont = 0;
+  nLT = 0;
+  nTAP_Fixed = 0;
+  nTap_VC = 0;
+  nTap_MVAR = 0;
+  nTAP_PHASE = 0;
+
   Utils* ut = Utils::GetInstance();
   description = ut->ProcessFile(file);
   ut->Delete();
@@ -643,7 +653,8 @@ int LoadFlow::Execute() {
       cout << l->GetAttr(P_IN) << " | " << l->GetAttr(P_OUT) << " | " << (loss) << " | " << l->GetAttr(Q_IN) << " | " << l->GetAttr(Q_OUT) << endl;
     }
 
-    cout << "Perda Total: " << loss_total * sBase << endl;
+    total_loss = loss_total * sBase;
+    cout << "Perda Total: " << total_loss << endl;
   }
 
   return counter;
@@ -886,6 +897,12 @@ void LoadFlow::CalcReport() {
 
   }
 }
+
+double LoadFlow::GetTotalLoss()
+{
+  return total_loss;
+}
+
 }
 
 using namespace load;

@@ -59,6 +59,8 @@ private:
   Report * report;
   Desc* description;
 
+  double total_loss;
+
   void mismatches();
   void solveSys();
   void calcJ();
@@ -95,6 +97,8 @@ public:
 
   void initialize(const char* file);
   void initialize();
+
+  double GetTotalLoss();
 };
 }
 #endif /* LOAD_FLOW_H_ */
