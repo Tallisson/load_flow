@@ -8,7 +8,7 @@ namespace load
 {
 
 Bar::~Bar() {
-  neighbors.clear();
+  //neighbors.clear();
   impd.clear();
 }
 

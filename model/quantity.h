@@ -26,7 +26,7 @@ public:
   void SetAttr(int attr, double value);
   double GetAttr(int attr);
   Quantity();
-  ~Quantity();
+  virtual ~Quantity();
 };
 }
 

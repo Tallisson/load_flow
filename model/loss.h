@@ -15,7 +15,7 @@ private:
   double loss;
 public:
   Loss();
-  ~Loss();
+  virtual ~Loss();
   void SetAttr(int attr, double value);
   double GetAttr(int attr);
 };

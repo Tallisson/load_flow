@@ -6,8 +6,14 @@ using namespace boost;
 namespace load
 {
 
+LoadFlow::LoadFlow():
+    error(0), sBase(S_BASE), use_base(true), verbose(true), s_alpha(1)
+{
+  bars = new Graph();
+  report = new Report();
+}
+
 LoadFlow::LoadFlow(double error):
-    numB(0), nPV(0), nPQ(0), cont(0), nLT(0), nTAP_Fixed(0), nTap_VC(0), nTap_MVAR(0), nTAP_PHASE(0),
     error(error), sBase(S_BASE), use_base(true), verbose(true), s_alpha(1)
 {
   bars = new Graph();
@@ -15,22 +21,19 @@ LoadFlow::LoadFlow(double error):
 }
 
 LoadFlow::LoadFlow(double error, double sBase):
-    numB(0), nPV(0), nPQ(0), cont(0), error(error), sBase(sBase), use_base(true), verbose(true), s_alpha(1)
+    error(error), sBase(sBase), use_base(true), verbose(true), s_alpha(1)
 {
   bars = new Graph();
-}
-
-LoadFlow::LoadFlow():
-    numB(0), nPV(0), nPQ(0), cont(0), nLT(0), nTAP_Fixed(0), nTap_VC(0), nTap_MVAR(0), nTAP_PHASE(0),
-    error(ERROR), use_base(true), s_alpha(1)
-{
-  bars = new Graph();
+  report = new Report();
 }
 
 LoadFlow::~LoadFlow() {
   delete bars;
   delete report;
-  delete description;
+  if(description != NULL)
+  {
+    //delete description;
+  }
 }
 
 void LoadFlow::AddBar(Bar* bar) {
@@ -163,7 +166,7 @@ void LoadFlow::SetSimetric(bool s) {
   bars->SetSimetric(s);
 }
 
-void LoadFlow::initState() {
+void LoadFlow::InitState() {
   Bar * bar;
   container::map<int, Bar*> nodes = bars->GetBars();
 
@@ -197,18 +200,18 @@ void LoadFlow::initState(double aInitial, double vInitial) {
   }
 }
 
-void LoadFlow::initialize() {
+void LoadFlow::Configure() {
   int s = nPV + (nPQ << 1);
 
   jacobian = zeros<mat>(s, s);
+  //cout << "213 Oi" << endl;
   estP = zeros<vec>(s);
   estS = zeros<vec>(s);
   diffP = zeros<vec>(s);
   diffS = zeros<vec>(s);
-  initState();
 }
 
-void LoadFlow::initialize(const char* file) {
+void LoadFlow::Configure(const char* file, bool reset) {
   numB = 0;
   nPV = 0;
   nPQ = 0,
@@ -234,12 +237,18 @@ void LoadFlow::initialize(const char* file) {
     this->AssocBars(branchs.at(i));
   }
 
-  this->initialize();
+  if(reset == false)
+  {
+    this->Configure();
+  } else {
+    this->Reset();
+  }
+  InitState();
 }
 
 void LoadFlow::initJ() {
   int s = nPV + (nPQ << 1);
-  jacobian = zeros<mat>(s, s);
+  jacobian.zeros(s, s);
 }
 
 void LoadFlow::updateState() {
@@ -575,14 +584,8 @@ void LoadFlow::calcS2() {
 
 int LoadFlow::Execute() {
   int counter = 0;
-  /*if(!boost::iequals(string(file), string(""))) {
-    initialize(file);
-  } else {
-    initialize();
-  }*/
 
   mismatches();
-
   if(verbose == true) {
     for(int i = 0; i < numB; i++) {
       Bar * tmp = bars->at(i+1);
@@ -631,30 +634,35 @@ int LoadFlow::Execute() {
   }
 
   CalcReport();
-  if(verbose == true) {
-    cout << endl << "Grandezas Calculdas: " << endl;
-    container::map<Bar*, Quantity*> data = report->GetPower();
-    for(container::map<Bar*, Quantity*>::iterator it = data.begin(); it != data.end(); it++) {
-      Bar* barK = it->first;
-      Quantity* qt = it->second;
 
-      cout << "Barra " << barK->GetId() << ": { PG [p.u.] = " << qt->GetAttr(PG) << ", QG [p.u.] = " << qt->GetAttr(QG)
-           << ", PC [p.u.] = " << qt->GetAttr(PC) <<  ", QC [p.u.] = " << qt->GetAttr(QC) << " }" << endl;
-    }
+  ostringstream os;
+  os << endl << "Grandezas Calculdas: " << endl;
+  container::map<Bar*, Quantity*> data = report->GetPower();
+  for(container::map<Bar*, Quantity*>::iterator it = data.begin(); it != data.end(); it++) {
+    Bar* barK = it->first;
+    Quantity* qt = it->second;
 
-    cout << endl << "Perdas: " << endl;
-    container::map<Node*, Loss*> losses = report->GetLosses();
-    cout << "Pkm[p.u.] | " << " Pmk[p.u.] | " << "Perdas | " << "Qkm[p.u.] | " << "Qmk[p.u.]" << endl;
-    double loss_total = 0;
-    for(container::map<Node*, Loss*>::iterator it = losses.begin(); it != losses.end(); it++) {
-      Loss* l = it->second;
-      loss_total += l->GetAttr(LOSS);
-      double loss = l->GetAttr(LOSS);
-      cout << l->GetAttr(P_IN) << " | " << l->GetAttr(P_OUT) << " | " << (loss) << " | " << l->GetAttr(Q_IN) << " | " << l->GetAttr(Q_OUT) << endl;
-    }
+    os << "Barra " << barK->GetId() << ": { PG [p.u.] = " << qt->GetAttr(PG) << ", QG [p.u.] = " << qt->GetAttr(QG)
+         << ", PC [p.u.] = " << qt->GetAttr(PC) <<  ", QC [p.u.] = " << qt->GetAttr(QC) << " }" << endl;
+  }
 
-    total_loss = loss_total * sBase;
-    cout << "Perda Total: " << total_loss << endl;
+  os << endl << "Perdas: " << endl;
+  container::map<Node*, Loss*> losses = report->GetLosses();
+  os << "Pkm[p.u.] | " << " Pmk[p.u.] | " << "Perdas | " << "Qkm[p.u.] | " << "Qmk[p.u.]" << endl;
+  double loss_total = 0;
+  for(container::map<Node*, Loss*>::iterator it = losses.begin(); it != losses.end(); it++) {
+    Loss* l = it->second;
+    loss_total += l->GetAttr(LOSS);
+    double loss = l->GetAttr(LOSS);
+    os << l->GetAttr(P_IN) << " | " << l->GetAttr(P_OUT) << " | " << (loss) << " | " << l->GetAttr(Q_IN) << " | " << l->GetAttr(Q_OUT) << endl;
+  }
+
+  total_loss = loss_total * sBase;
+  os << "Perda Total: " << total_loss << endl;
+
+  if(verbose)
+  {
+    cout << os.str();
   }
 
   return counter;
@@ -903,13 +911,29 @@ double LoadFlow::GetTotalLoss()
   return total_loss;
 }
 
+void LoadFlow::SetVerbose(bool v)
+{
+  verbose = v;
+}
+
+void LoadFlow::Reset() {
+
+  int s = nPV + (nPQ << 1);
+
+  estP.zeros(s);
+  estS.zeros(s);
+  diffP.zeros(s);
+  diffS.zeros(s);
+}
+
 }
 
 using namespace load;
 
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
-
-  lf->initialize("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
-  lf->Execute();
+  lf->SetVerbose(false);
+  lf->Configure("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
+  //lf->Execute();
+  cout << lf->GetTotalLoss() << endl;
 }

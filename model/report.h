@@ -24,7 +24,7 @@ public:
   container::map<Node*, Loss*> GetLosses();
 
   Report();
-  ~Report();
+  virtual ~Report();
 };
 }
 

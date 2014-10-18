@@ -64,7 +64,7 @@ private:
   void mismatches();
   void solveSys();
   void calcJ();
-  void initState();
+
   void initState(double aInitial, double vInitial);
   void initJ();
   void updateState();
@@ -77,7 +77,7 @@ public:
   LoadFlow(double error);
   LoadFlow(double error, double sBase);
   LoadFlow();
-  ~LoadFlow();
+  virtual ~LoadFlow();
 
   int Execute();
   void Execute(double aInitial, double vInitial);
@@ -95,8 +95,11 @@ public:
   void SetVerbose(bool v);
   void CalcReport();
 
-  void initialize(const char* file);
-  void initialize();
+  void Configure(const char* file, bool reset = false);
+  void Configure();
+  void InitState();
+
+  void Reset();
 
   double GetTotalLoss();
 };

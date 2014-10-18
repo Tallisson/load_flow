@@ -2,7 +2,6 @@
 #include "bar.h"
 #include "admitt.h"
 
-//using namespace std;
 using namespace boost;
 
 namespace load

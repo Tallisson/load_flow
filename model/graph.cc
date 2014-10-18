@@ -16,11 +16,12 @@ numV(0), numE(0), simetric(true)
 }
 
 Graph::~Graph() {
-  Bar * b;
-  for(container::map<int, Bar*>::iterator it = bars.begin(); it != bars.end(); it++) {
-    b = it->second;
-    b->Clear();
+  container::map<int, Bar*>::iterator it;
+  for(it = bars.begin(); it != bars.end(); it++)
+  {
+    delete it->second;
   }
+
   bars.clear();
 }
 
