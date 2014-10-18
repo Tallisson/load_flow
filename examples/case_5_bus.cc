@@ -6,6 +6,7 @@
 void exec5();
 
 using namespace std;
+using namespace load;
 using namespace arma;
 
 void exec5() {

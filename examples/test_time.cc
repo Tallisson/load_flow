@@ -14,6 +14,7 @@
 #define ERROR_TEST 0.003
 
 using namespace std;
+using namespace load;
 using namespace arma;
 
 double diff(timespec start, timespec end);
