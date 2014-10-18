@@ -934,6 +934,12 @@ int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
   lf->SetVerbose(false);
   lf->Configure("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
-  //lf->Execute();
+  lf->Execute();
+  cout << lf->GetTotalLoss() << endl;
+
+  Bar* b = lf->GetBar(2);
+  b->SetAPower(b->GetAPower()+0.2);
+  lf->SetVerbose(true);
+  lf->Execute();
   cout << lf->GetTotalLoss() << endl;
 }
