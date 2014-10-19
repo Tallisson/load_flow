@@ -37,10 +37,10 @@ private:
 
   mat jacobian;
 
-  vec estP;
-  vec estS;
-  vec diffP;
-  vec diffS;
+  vec calcP;
+  vec calcQ;
+  vec errorP;
+  vec errorQ;
 
   container::map<int, int> ord;
   container::map<int, int> ordPQ;
@@ -61,7 +61,7 @@ private:
 
   double total_loss;
 
-  void mismatches();
+  void Mismatches();
   void solveSys();
   void calcJ();
 
@@ -100,8 +100,10 @@ public:
   void InitState();
 
   void Reset();
+  void ResetReport();
 
   double GetTotalLoss();
+
 };
 }
 #endif /* LOAD_FLOW_H_ */

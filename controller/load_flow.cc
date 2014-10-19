@@ -204,11 +204,11 @@ void LoadFlow::Configure() {
   int s = nPV + (nPQ << 1);
 
   jacobian = zeros<mat>(s, s);
-  //cout << "213 Oi" << endl;
-  estP = zeros<vec>(s);
-  estS = zeros<vec>(s);
-  diffP = zeros<vec>(s);
-  diffS = zeros<vec>(s);
+
+  calcP = zeros<vec>(s);
+  calcQ = zeros<vec>(s);
+  errorP = zeros<vec>(s);
+  errorQ = zeros<vec>(s);
 }
 
 void LoadFlow::Configure(const char* file, bool reset) {
@@ -259,12 +259,12 @@ void LoadFlow::updateState() {
     barK = bars->at(it->first);
 
     if(barK->GetType() != SLACK) {
-      barK->SetAngle(barK->GetAngle() + diffS(k));
+      barK->SetAngle(barK->GetAngle() + errorQ(k));
     }
 
     if(barK->GetType() == LOAD) {
       int i = ordPQ.at(barK->GetId()) + (nPV + nPQ);
-      barK->SetVoltage(barK->GetVoltage() + diffS(i));
+      barK->SetVoltage(barK->GetVoltage() + errorQ(i));
     }
 
     it++;
@@ -272,12 +272,12 @@ void LoadFlow::updateState() {
 }
 
 bool LoadFlow::nextIterate() {
-  vec t = abs(diffP);
+  vec t = abs(errorP);
   max_error = max(t);
   return  max_error > error;
 }
 
-void LoadFlow::mismatches() {
+void LoadFlow::Mismatches() {
   double theta;
   container::map<int, Bar*> nodes = bars->GetBars();
 
@@ -288,7 +288,7 @@ void LoadFlow::mismatches() {
 
     if(barK->GetType() != SLACK) {
       double vK = barK->GetVoltage();
-      diffP(k) = barK->GetAPower();
+      errorP(k) = barK->GetAPower();
 
       container::map<int, Node*> neighbors = barK->GetWeight();
       Node* edge;
@@ -302,15 +302,15 @@ void LoadFlow::mismatches() {
         // (g(km)*V(k)^2 - V(k)*V(m)*(g(km)*cos(akm)+b(km)*sin(akm)));
         if(edge->GetFrom() == barK->GetId())
         {
-          diffP(k) = diffP(k) - (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+          errorP(k) = errorP(k) - (edge->GetC() * pow((vK * 1/edge->GetTap()), 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                    (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())));
         } else if(edge->GetFrom() == barM->GetId())
         {
-          diffP(k) = diffP(k) - (edge->GetC() * pow(vK, 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+          errorP(k) = errorP(k) - (edge->GetC() * pow(vK, 2) - (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                              (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())));
         }
       }
-      barK->SetEst(A_POWER, diffP(k));
+      barK->SetEst(A_POWER, errorP(k));
 
     }
 
@@ -320,7 +320,7 @@ void LoadFlow::mismatches() {
 
       // Incluindo Susceptância Nodal na Potência reativa
       // Qg(k) + Bsh(k)*V(k)^2 - Qc(k)
-      diffP(i) = (barK->GetRPower() + barK->GetBSh() * pow(vK, 2));
+      errorP(i) = (barK->GetRPower() + barK->GetBSh() * pow(vK, 2));
       container::map<int, Node*> neighbors = barK->GetWeight();
 
       Node* edge;
@@ -334,16 +334,16 @@ void LoadFlow::mismatches() {
         // mis(nb-1+ordPQ(k)) = mis(nb-1+ordPQ(k)) - (-(b(km)+bsh(km))*V(k)^2 + V(k)*V(m)*(b(km)*cos(akm)-g(km)*sin(akm)));
         if(edge->GetFrom() == barK->GetId())
         {
-          diffP(i) -= -((edge->GetS() * pow(1/edge->GetTap(), 2)) + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+          errorP(i) -= -((edge->GetS() * pow(1/edge->GetTap(), 2)) + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                     (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi()));
         } else if(edge->GetFrom() == barM->GetId())
         {
-          diffP(i) -= -(edge->GetS() + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
+          errorP(i) -= -(edge->GetS() + edge->GetSh())  * pow(vK, 2) + (vK * 1/edge->GetTap()) * barM->GetVoltage() *
                               (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi()));
         }
       }
 
-      barK->SetEst(R_POWER, diffP(i));
+      barK->SetEst(R_POWER, errorP(i));
     }
 
     it++;
@@ -353,7 +353,7 @@ void LoadFlow::mismatches() {
 
 void LoadFlow::solveSys() {
   mat m = inv(jacobian);
-  diffS = m*-diffP;
+  errorQ = m*-errorP;
 }
 
 void LoadFlow::DpDer() {
@@ -585,14 +585,14 @@ void LoadFlow::calcS2() {
 int LoadFlow::Execute() {
   int counter = 0;
 
-  mismatches();
+  Mismatches();
   if(verbose == true) {
     for(int i = 0; i < numB; i++) {
       Bar * tmp = bars->at(i+1);
       cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
     }
 
-    cout << "Erro: " << endl << diffP << endl;
+    cout << "Erro: " << endl << errorP << endl;
   }
 
   while(true) {
@@ -600,20 +600,20 @@ int LoadFlow::Execute() {
     solveSys();
     updateState();
     counter++;
-    mismatches();
+    Mismatches();
     setControlVariables();
 
     if(verbose == true) {
       cout << "Jac" << endl << jacobian << endl;
 
-      cout << "dx" << endl << diffS << endl;
+      cout << "dx" << endl << errorQ << endl;
 
       for(int i = 0; i < numB; i++) {
         Bar * tmp = bars->at(i+1);
         cout << "Bar(" << tmp->GetId() << ")=> (v, a): " << tmp->GetVoltage()  << ", "  << tmp->GetAngle()<< endl;
       }
 
-      cout << "Erro: " << endl << diffP << endl;
+      cout << "Erro: " << endl << errorP << endl;
     }
 
     if(nextIterate() == false) {
@@ -917,29 +917,36 @@ void LoadFlow::SetVerbose(bool v)
 }
 
 void LoadFlow::Reset() {
-
+  InitState();
+  ResetReport();
   int s = nPV + (nPQ << 1);
 
-  estP.zeros(s);
-  estS.zeros(s);
-  diffP.zeros(s);
-  diffS.zeros(s);
+  calcP.zeros(s);
+  calcQ.zeros(s);
+  errorP.zeros(s);
+  errorQ.zeros(s);
 }
 
+
+void LoadFlow::ResetReport()
+{
+  report->Clear();
+}
 }
 
 using namespace load;
 
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
-  lf->SetVerbose(false);
+  //lf->SetVerbose(false);
   lf->Configure("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
   lf->Execute();
   cout << lf->GetTotalLoss() << endl;
 
+  //lf->SetVerbose(true);
+  lf->Reset();
   Bar* b = lf->GetBar(2);
   b->SetAPower(b->GetAPower()+0.2);
-  lf->SetVerbose(true);
   lf->Execute();
   cout << lf->GetTotalLoss() << endl;
 }

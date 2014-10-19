@@ -23,6 +23,8 @@ public:
   container::map<Bar*, Quantity*> GetPower();
   container::map<Node*, Loss*> GetLosses();
 
+  void Clear();
+
   Report();
   virtual ~Report();
 };

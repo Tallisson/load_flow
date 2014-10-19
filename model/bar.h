@@ -52,12 +52,17 @@ public:
     id = atoi(data.at(0).c_str());
     type = atoi(data.at(1).c_str());
     actual_voltage = voltage = atof(data.at(2).c_str());
-    actual_angle = angle = (atof(data.at(3).c_str()) * M_PI / 180);
+    actual_angle = (atof(data.at(3).c_str()) * M_PI / 180);
     aPowerL = atof(data.at(4).c_str());
     rPowerL = atof(data.at(5).c_str());
     aPowerG =  atof(data.at(6).c_str());
     rPowerG = atof(data.at(7).c_str());
     bSh = atof(data.at(8).c_str());
+
+    if(type == SLACK)
+    {
+      angle = actual_angle;
+    }
 
     erroQ = 0;
     erroP = 0;

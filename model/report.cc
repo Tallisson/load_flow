@@ -47,4 +47,10 @@ Report::~Report() {
   losses.clear();
 }
 
+void Report::Clear()
+{
+  power.clear();
+  losses.clear();
+}
+
 }
