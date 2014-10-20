@@ -8,7 +8,12 @@ namespace load
 {
 
 Bar::~Bar() {
-  //neighbors.clear();
+  neighbors.clear();
+  container::map<int, Node*>::iterator it;
+  for(it = impd.begin(); it != impd.end(); it++)
+  {
+    delete it->second;
+  }
   impd.clear();
 }
 

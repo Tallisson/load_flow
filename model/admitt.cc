@@ -3,6 +3,10 @@
 namespace load
 {
 
+Admitt::~Admitt()
+{
+}
+
 void Admitt::SetR(double r) {
   this->r = r;
 }

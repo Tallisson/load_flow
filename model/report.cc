@@ -34,12 +34,14 @@ Report::~Report() {
   container::map<Bar*, Quantity*>::iterator itP;
   for(itP = power.begin(); itP != power.end(); itP++)
   {
+    delete itP->first;
     delete itP->second;
   }
 
   container::map<Node*, Loss*>::iterator itL;
   for(itL = losses.begin(); itL != losses.end(); itL++)
   {
+    delete itL->first;
     delete itL->second;
   }
 

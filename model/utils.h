@@ -23,6 +23,11 @@ public:
   container::vector<Bar*> bars;
   container::vector<Admitt*> admmits;
   Desc(): name_system(""), s_base(0) {};
+  ~Desc()
+  {
+    bars.clear();
+    admmits.clear();
+  }
 } Desc;
 
 class Utils{

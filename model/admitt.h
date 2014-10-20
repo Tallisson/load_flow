@@ -66,6 +66,8 @@ public:
     type(TRANSMISSION_LINE), min_lim(0), max_lim(0)
   {};
 
+  ~Admitt();
+
   void SetR(double r);
   void SetX(double x);
   void SetSh(double sh);

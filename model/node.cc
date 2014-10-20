@@ -3,6 +3,10 @@
 namespace load
 {
 
+Node::~Node()
+{
+}
+
 double Node::GetC() {
   return c;
 }

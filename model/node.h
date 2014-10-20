@@ -73,6 +73,7 @@ public:
   Node(): c(0), s(0), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0), from(from), to(to), crt_bar(0)
   {};
 
+  ~Node();
   double GetS();
   double GetC();
   double GetSh();
