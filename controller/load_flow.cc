@@ -29,7 +29,9 @@ LoadFlow::LoadFlow(double error, double sBase):
 
 LoadFlow::~LoadFlow() {
   delete report;
+  report = NULL;
   delete bars;
+  bars = NULL;
 }
 
 void LoadFlow::AddBar(Bar* bar) {

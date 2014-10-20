@@ -20,6 +20,7 @@ Graph::~Graph() {
   for(it = bars.begin(); it != bars.end(); it++)
   {
     delete it->second;
+    it->second = NULL;
   }
 
   bars.clear();
