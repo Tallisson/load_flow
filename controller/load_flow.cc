@@ -28,12 +28,8 @@ LoadFlow::LoadFlow(double error, double sBase):
 }
 
 LoadFlow::~LoadFlow() {
-  delete bars;
   delete report;
-  if(description != NULL)
-  {
-    //delete description;
-  }
+  delete bars;
 }
 
 void LoadFlow::AddBar(Bar* bar) {
@@ -183,35 +179,16 @@ void LoadFlow::InitState() {
   }
 }
 
-void LoadFlow::initState(double aInitial, double vInitial) {
-  Bar * bar;
-  container::map<int, Bar*> nodes = bars->GetBars();
-
-  for (container::map<int, Bar*>::iterator it=nodes.begin(); it!=nodes.end(); ++it) {
-    bar = it->second;
-
-    if(bar->GetType() != SLACK) {
-      bar->SetAngle(aInitial);
-    }
-
-    if(bar->GetType() == LOAD) {
-      bar->SetVoltage(vInitial);
-    }
-  }
-}
-
 void LoadFlow::Configure() {
   int s = nPV + (nPQ << 1);
 
-  jacobian = zeros<mat>(s, s);
-
-  calcP = zeros<vec>(s);
-  calcQ = zeros<vec>(s);
-  errorP = zeros<vec>(s);
-  errorQ = zeros<vec>(s);
+  calcP.zeros(s);
+  calcQ.zeros(s);
+  errorP.zeros(s);
+  errorQ.zeros(s);
 }
 
-void LoadFlow::Configure(const char* file, bool reset) {
+void LoadFlow::Configure(const char* file) {
   numB = 0;
   nPV = 0;
   nPQ = 0,
@@ -237,12 +214,7 @@ void LoadFlow::Configure(const char* file, bool reset) {
     this->AssocBars(branchs.at(i));
   }
 
-  if(reset == false)
-  {
-    this->Configure();
-  } else {
-    this->Reset();
-  }
+  this->Configure();
   InitState();
 }
 
@@ -352,7 +324,7 @@ void LoadFlow::Mismatches() {
 }
 
 void LoadFlow::solveSys() {
-  mat m = inv(jacobian);
+  fmat m = inv(jacobian);
   errorQ = m*-errorP;
 }
 
@@ -659,7 +631,6 @@ int LoadFlow::Execute() {
 
   total_loss = loss_total * sBase;
   os << "Perda Total: " << total_loss << endl;
-
   if(verbose)
   {
     cout << os.str();
@@ -927,7 +898,6 @@ void LoadFlow::Reset() {
   errorQ.zeros(s);
 }
 
-
 void LoadFlow::ResetReport()
 {
   report->Clear();
@@ -938,15 +908,17 @@ using namespace load;
 
 int main(int argc, char ** argv) {
   LoadFlow *lf = new LoadFlow(0.0001);
-  //lf->SetVerbose(false);
+  lf->SetVerbose(false);
   lf->Configure("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
   lf->Execute();
   cout << lf->GetTotalLoss() << endl;
+  delete lf;
 
+  LoadFlow* lf1 = new LoadFlow(0.0001);
   //lf->SetVerbose(true);
-  lf->Reset();
-  Bar* b = lf->GetBar(2);
-  b->SetAPower(b->GetAPower()+0.2);
-  lf->Execute();
-  cout << lf->GetTotalLoss() << endl;
+  lf1->Configure("/home/thiago/workspace/LoadFlow/examples/14-bus.txt");
+  Bar* b = lf1->GetBar(2);
+  b->SetVoltage(0.76);
+  lf1->Execute();
+  cout << lf1->GetTotalLoss() << endl;
 }

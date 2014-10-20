@@ -73,7 +73,7 @@ public:
   Node(): c(0), s(0), sh(0), tap(1), type(TRANSMISSION_LINE), angle_phi(0), from(from), to(to), crt_bar(0)
   {};
 
-  ~Node();
+  virtual ~Node();
   double GetS();
   double GetC();
   double GetSh();
@@ -91,7 +91,6 @@ public:
   void SetPhi(double angle);
   void SetBar(int bar);
   void SetLim(int var, double value);
-
   bool Exist();
 
   int GetFrom();

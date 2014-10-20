@@ -35,7 +35,7 @@ private:
   int nTap_MVAR;
   int nTAP_PHASE;
 
-  mat jacobian;
+  fmat jacobian;
 
   vec calcP;
   vec calcQ;
@@ -65,7 +65,6 @@ private:
   void solveSys();
   void calcJ();
 
-  void initState(double aInitial, double vInitial);
   void initJ();
   void updateState();
   void calcS2();
@@ -95,7 +94,7 @@ public:
   void SetVerbose(bool v);
   void CalcReport();
 
-  void Configure(const char* file, bool reset = false);
+  void Configure(const char* file);
   void Configure();
   void InitState();
 

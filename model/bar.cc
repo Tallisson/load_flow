@@ -8,13 +8,8 @@ namespace load
 {
 
 Bar::~Bar() {
-  neighbors.clear();
-  container::map<int, Node*>::iterator it;
-  for(it = impd.begin(); it != impd.end(); it++)
-  {
-    delete it->second;
-  }
   impd.clear();
+  neighbors.clear();
 }
 
 double Bar::GetAngle() {
@@ -173,6 +168,8 @@ void Bar::SetBSh(double bSh) {
 void Bar::Clear() {
   neighbors.clear();
   impd.clear();
+
+  delete this;
 }
 
 double Bar::GetActualAngle()
@@ -184,5 +181,16 @@ double Bar::GetActualVoltage()
 {
   return actual_voltage;
 }
+
+/*void Bar::Clear()
+{
+  neighbors.clear();
+  container::map<int, Node*>::iterator it;
+  for(it = impd.begin(); it != impd.end(); it++)
+  {
+    delete it->second;
+  }
+  impd.clear();
+}*/
 
 }

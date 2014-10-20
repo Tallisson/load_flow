@@ -84,7 +84,7 @@ public:
     rPower = rPowerG - rPowerL;
   };
 
-  ~Bar();
+  virtual ~Bar();
 
   double GetAngle();
   double GetActualAngle();
