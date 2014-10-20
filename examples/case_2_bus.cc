@@ -9,7 +9,7 @@ using namespace std;
 using namespace load;
 using namespace arma;
 
-void exec2() {
+/*void exec2() {
   LoadFlow * lf = new LoadFlow(0.0001);
   lf->SetUseBase(false);
   // Execução 2 barras
@@ -27,10 +27,11 @@ void exec2() {
 
   lf->Execute();
   delete lf;
-}
+}*/
 
 /*int main(int argc, char ** argv) {
   exec2();
 
   return 0;
 }*/
+
