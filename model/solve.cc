@@ -6,16 +6,14 @@ using namespace std;
 namespace load
 {
 
-Solve::Solve(int cols, int rows)
+Solve::Solve(int rows, int cols):
+  rows(rows), cols(cols)
 {
   jacobian = new mat(cols, rows);
 }
 
 Solve::~Solve()
 {
-  jacobian->reset();
-  delete jacobian;
-  jacobian = NULL;
 }
 
 void Solve::FillR()
@@ -24,39 +22,36 @@ void Solve::FillR()
   cout << *(jacobian) << endl;
 }
 
-void Solve::SetValue(int col, int row, double value)
+void Solve::SetValue(int row, int col, double value)
 {
-  jacobian->at(col, row) = value;
+  (jacobian->at(row, col)) = value;
 }
 
-double Solve::GetValue(int col, int row)
+void Solve::Zeros()
 {
-  return jacobian->at(col, row);
+  jacobian->zeros(rows, cols);
 }
 
-mat* Solve::Product(vec error)
+void Solve::Clear()
 {
-  cout << (inv(*jacobian)) << endl;
-  mat* m = new mat((inv(*jacobian) * -error));
+  jacobian->reset();
+  delete jacobian;
+}
+
+void Solve::Print()
+{
+  cout << *(jacobian) << endl;
+}
+
+double Solve::GetValue(int row, int col)
+{
+  return jacobian->at(row, col);
+}
+
+mat Solve::Product(vec error)
+{
+  mat m = mat(((inv(*jacobian)) * -error));
 
   return m;
 }
-}
-
-using namespace load;
-
-int main(int argc, char ** argv)
-{
-  Solve* s = new Solve(22, 22);
-  s->FillR();
-  vec v = zeros<vec>(22);
-  mat* a = s->Product(v);
-  cout << *(a) << endl;
-
-  delete s;
-
-  s = new Solve(22, 22);
-  s->FillR();
-
-  return 0;
 }

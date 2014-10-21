@@ -9,6 +9,7 @@
 #include "../model/report.h"
 #include "../model/define.h"
 #include "../model/utils.h"
+#include "../model/solve.h"
 
 using namespace arma;
 using namespace std;
@@ -35,7 +36,8 @@ private:
   int nTap_MVAR;
   int nTAP_PHASE;
 
-  fmat jacobian;
+  mat* jacobian;
+  Solve* solve;
 
   vec calcP;
   vec calcQ;

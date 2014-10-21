@@ -11,6 +11,7 @@ LoadFlow::LoadFlow():
 {
   bars = new Graph();
   report = new Report();
+  solve = NULL;
 }
 
 LoadFlow::LoadFlow(double error):
@@ -18,6 +19,7 @@ LoadFlow::LoadFlow(double error):
 {
   bars = new Graph();
   report = new Report();
+  solve = NULL;
 }
 
 LoadFlow::LoadFlow(double error, double sBase):
@@ -25,13 +27,17 @@ LoadFlow::LoadFlow(double error, double sBase):
 {
   bars = new Graph();
   report = new Report();
+  solve = NULL;
 }
 
 LoadFlow::~LoadFlow() {
   delete report;
   report = NULL;
+
   delete bars;
   bars = NULL;
+
+  solve->Clear();
 }
 
 void LoadFlow::AddBar(Bar* bar) {
@@ -184,6 +190,8 @@ void LoadFlow::InitState() {
 void LoadFlow::Configure() {
   int s = nPV + (nPQ << 1);
 
+  solve = new Solve(s, s);
+
   calcP.zeros(s);
   calcQ.zeros(s);
   errorP.zeros(s);
@@ -215,14 +223,16 @@ void LoadFlow::Configure(const char* file) {
   for(unsigned i = 0; i < branchs.size(); i++) {
     this->AssocBars(branchs.at(i));
   }
+  delete description;
 
   this->Configure();
   InitState();
 }
 
 void LoadFlow::initJ() {
-  int s = nPV + (nPQ << 1);
-  jacobian.zeros(s, s);
+  //int s = nPV + (nPQ << 1);
+  //jacobian->zeros(s, s);
+  solve->Zeros();
 }
 
 void LoadFlow::updateState() {
@@ -326,8 +336,9 @@ void LoadFlow::Mismatches() {
 }
 
 void LoadFlow::solveSys() {
-  fmat m = inv(jacobian);
-  errorQ = m*-errorP;
+  //mat m = inv(*jacobian);
+  //errorQ = m*-errorP;
+  errorQ = solve->Product(errorP);
 }
 
 void LoadFlow::DpDer() {
@@ -350,12 +361,14 @@ void LoadFlow::DpDer() {
         // -V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm)) + Jac(k-1, k-1);
         if(edge->GetFrom() == barK->GetId())
         {
-          jacobian(k, k) = -(barK->GetVoltage()* 1/edge->GetTap()) * barM->GetVoltage() *
-                            (edge->GetC() * sin(theta - edge->GetPhi()) - edge->GetS() * cos(theta - edge->GetPhi())) + jacobian(k, k);
+          double value = (-(barK->GetVoltage()* 1/edge->GetTap()) * barM->GetVoltage() *
+              (edge->GetC() * sin(theta - edge->GetPhi()) - edge->GetS() * cos(theta - edge->GetPhi())) + solve->GetValue(k, k));
+          solve->SetValue(k, k, value);
         } else if(edge->GetFrom() == barM->GetId())
         {
-          jacobian(k, k) = -barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta - edge->GetPhi()) -
-                            edge->GetS() * cos(theta - edge->GetPhi())) + jacobian(k, k);
+          double value = (-barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta - edge->GetPhi()) -
+                            edge->GetS() * cos(theta - edge->GetPhi())) + solve->GetValue(k, k));
+          solve->SetValue(k, k, value);
         }
 
         // dPk em relação a 'am' (exceto quando m for a barra slack).
@@ -363,7 +376,7 @@ void LoadFlow::DpDer() {
           // V(k)*V(m)*(g(km)*sin(akm)-b(km)*cos(akm));
           //cout << "M: " << m << endl;
           m = ord.at(barM->GetId());
-          jacobian(k, m) = barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta));
+          (solve->SetValue(k, m, (barK->GetVoltage() * barM->GetVoltage() * (edge->GetC() * sin(theta) - edge->GetS() * cos(theta)))));
         }
 
         // dPk em relação a 'vk'.
@@ -372,12 +385,13 @@ void LoadFlow::DpDer() {
           m = noSlack + ordPQ.at(barK->GetId());
           if(edge->GetFrom() == barK->GetId())
           {
-            jacobian(k, m) = -2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
-                             (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())) + jacobian(k, m);
+            double value = (-2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
+                  (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi())) + solve->GetValue(k, m));
+            solve->SetValue(k, m, value);
           } else if(edge->GetFrom() == barM->GetId())
           {
-            jacobian(k, m) = -2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
-                             (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())) + jacobian(k, m);
+            (solve->SetValue(k, m, (-2 * edge->GetC() * (barK->GetVoltage() * 1 / edge->GetTap()) + barM->GetVoltage() *
+                             (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi())) + solve->GetValue(k, m))));
           }
         }
 
@@ -388,11 +402,11 @@ void LoadFlow::DpDer() {
 
           if(edge->GetFrom() == barK->GetId())
           {
-            jacobian(k, m) = (barK->GetVoltage() * edge->GetTap()) *
-                             (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+            double value = (barK->GetVoltage() * edge->GetTap()) * (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+            solve->SetValue(k, m, value);
           } else if(edge->GetFrom() == barM->GetId()) {
-            jacobian(k, m) = (barK->GetVoltage() * edge->GetTap()) *
-                               (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+            double value = barK->GetVoltage() * edge->GetTap() * (edge->GetC() * cos(theta + edge->GetPhi())  + edge->GetS() * sin(theta + edge->GetPhi()));
+            solve->SetValue(k, m, value);
           }
         }
       }
@@ -426,12 +440,14 @@ void LoadFlow::DqDer() {
         m = ord.at(barK->GetId());
         if(edge->GetFrom() == barK->GetId())
         {
-          jacobian(k, m) = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
-                            (edge->GetS() * sin(theta - edge->GetPhi()) + edge->GetC() * cos(theta - edge->GetPhi())) + jacobian(k, m);
+          double value = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+              (edge->GetS() * sin(theta - edge->GetPhi()) + edge->GetC() * cos(theta - edge->GetPhi())) + solve->GetValue(k, m);
+          solve->SetValue(k, m, value);
         } else if(edge->GetFrom() == barM->GetId())
         {
-          jacobian(k, m) = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
-                            (edge->GetS() * sin(theta + edge->GetPhi()) + edge->GetC() * cos(theta + edge->GetPhi())) + jacobian(k, m);
+          double value = (barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+              (edge->GetS() * sin(theta + edge->GetPhi()) + edge->GetC() * cos(theta + edge->GetPhi())) + solve->GetValue(k, m);
+          solve->SetValue(k, m, value);
         }
 
         // dQk em relaçao a 'am' (exceto quando m for a barra slack).
@@ -440,12 +456,14 @@ void LoadFlow::DqDer() {
           m = ord.at(barM->GetId());
           if(edge->GetFrom() == barK->GetId())
           {
-            jacobian(k, m) = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
-                            (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+            double value = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                (edge->GetC() * cos(theta - edge->GetPhi()) + edge->GetS() * sin(theta - edge->GetPhi()));
+            solve->SetValue(k, m, value);
           } else if(edge->GetFrom() == barM->GetId())
           {
-            jacobian(k, m) = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
-                              (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+            double value = -(barK->GetVoltage() * 1/edge->GetTap()) * barM->GetVoltage() *
+                (edge->GetC() * cos(theta + edge->GetPhi()) + edge->GetS() * sin(theta + edge->GetPhi()));
+            solve->SetValue(k, m, value);
           }
         }
 
@@ -453,12 +471,14 @@ void LoadFlow::DqDer() {
         // 2*(b(km)+bsh(km))*V(k) - V(m)*(b(km)*cos(akm)-g(km)*sin(akm)) + Jac(nb-1+ordPQ(k), nb-1+ordPQ(k));
         if(edge->GetFrom() == barK->GetId())
         {
-          jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) - barM->GetVoltage() *
-                              (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())) + jacobian(k, k);
+          double value = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) - barM->GetVoltage() *
+              (edge->GetS() * cos(theta - edge->GetPhi()) - edge->GetC() * sin(theta - edge->GetPhi())) + solve->GetValue(k, k);
+          solve->SetValue(k, k, value);
         } else if(edge->GetFrom() == barM->GetId())
         {
-          jacobian(k, k) = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) -
-                                        barM->GetVoltage() * (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi())) + jacobian(k, k);
+          double value = 2 * (edge->GetS()+edge->GetSh()) * (barK->GetVoltage() * 1/edge->GetTap()) -
+              barM->GetVoltage() * (edge->GetS() * cos(theta + edge->GetPhi()) - edge->GetC() * sin(theta + edge->GetPhi())) + solve->GetValue(k, k);
+          solve->SetValue(k, k, value);
         }
         // dQk em relacao a 'vm'.
         if(barM->GetType() == LOAD) {
@@ -471,19 +491,22 @@ void LoadFlow::DqDer() {
           m = ordPQ.at(barM->GetId()) + noSlack;
           if(edge->GetFrom() == barK->GetId())
           {
-            jacobian(k, m) = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta - edge->GetPhi()) -
-                             edge->GetC() * sin(theta - edge->GetPhi()));
+            double value = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta - edge->GetPhi()) -
+                edge->GetC() * sin(theta - edge->GetPhi()));
+            solve->SetValue(k, m, value);
           } else if(edge->GetFrom() == barM->GetId())
           {
-            jacobian(k, m) = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta + edge->GetPhi()) -
-                             edge->GetC() * sin(theta + edge->GetPhi()));
+            double value = -(barK->GetVoltage()*1/edge->GetTap()) * (edge->GetS() * cos(theta + edge->GetPhi()) -
+                edge->GetC() * sin(theta + edge->GetPhi()));
+            solve->SetValue(k, m, value);
           }
         }
       }
 
       // dQk em relaçao a 'vk' (continuação).
       // 2*Bsh(k)*V(k)
-      jacobian(k, k) = 2*barK->GetBSh() * barK->GetVoltage() + jacobian(k, k);
+      double value = 2*barK->GetBSh() * barK->GetVoltage() + solve->GetValue(k, k);
+      solve->SetValue(k, k, value);
       k++;
     }
 
@@ -578,7 +601,8 @@ int LoadFlow::Execute() {
     setControlVariables();
 
     if(verbose == true) {
-      cout << "Jac" << endl << jacobian << endl;
+      cout << "Jac" << endl;
+      solve->Print();
 
       cout << "dx" << endl << errorQ << endl;
 

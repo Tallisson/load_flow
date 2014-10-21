@@ -11,16 +11,21 @@ class Solve
 {
 private:
   mat* jacobian;
-
+  int rows;
+  int cols;
 public:
   Solve(int cols, int rows);
-  ~Solve();
+  virtual ~Solve();
 
   void FillR();
   void SetValue(int col, int row, double value);
-  double GetValue(int col, int row);
-  mat* Product(vec error);
+  void Zeros();
+  void Clear();
+  void Print();
 
+  double GetValue(int col, int row);
+
+  mat Product(vec error);
 };
 }
 
