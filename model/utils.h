@@ -8,7 +8,6 @@
 #include <boost/regex.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/container/vector.hpp>
 #include "bar.h"
 #include "admitt.h"
 #include "define.h"
