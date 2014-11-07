@@ -9,7 +9,7 @@ namespace load
 Solve::Solve(int rows, int cols):
   rows(rows), cols(cols)
 {
-  jacobian = new mat(cols, rows);
+  data = new mat(cols, rows);
 }
 
 Solve::~Solve()
@@ -18,40 +18,45 @@ Solve::~Solve()
 
 void Solve::FillR()
 {
-  jacobian->randu(jacobian->n_rows, jacobian->n_rows);
-  cout << *(jacobian) << endl;
+  data->randu(data->n_rows, data->n_rows);
+  cout << *(data) << endl;
 }
 
 void Solve::SetValue(int row, int col, double value)
 {
-  (jacobian->at(row, col)) = value;
+  (data->at(row, col)) = value;
 }
 
 void Solve::Zeros()
 {
-  jacobian->zeros(rows, cols);
+  data->zeros(rows, cols);
 }
 
 void Solve::Clear()
 {
-  jacobian->reset();
-  delete jacobian;
+  data->reset();
+  delete data;
 }
 
 void Solve::Print()
 {
-  cout << *(jacobian) << endl;
+  cout << *(data) << endl;
 }
 
 double Solve::GetValue(int row, int col)
 {
-  return jacobian->at(row, col);
+  return data->at(row, col);
 }
 
 mat Solve::Product(vec error)
 {
-  mat m = mat(((inv(*jacobian)) * -error));
+  mat m = mat(((inv(*data)) * -error));
 
   return m;
+}
+
+mat Solve::Inverse()
+{
+  return inv(*(data));
 }
 }

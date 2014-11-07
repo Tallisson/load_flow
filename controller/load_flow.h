@@ -36,8 +36,9 @@ private:
   int nTap_MVAR;
   int nTAP_PHASE;
 
-  mat* jacobian;
-  Solve* solve;
+  //mat* jacobian;
+  Solve* jacobian;
+  Solve* y_bus;
 
   vec calcP;
   vec calcQ;

@@ -10,7 +10,7 @@ namespace load
 class Solve
 {
 private:
-  mat* jacobian;
+  mat* data;
   int rows;
   int cols;
 public:
@@ -26,6 +26,7 @@ public:
   double GetValue(int col, int row);
 
   mat Product(vec error);
+  mat Inverse();
 };
 }
 
